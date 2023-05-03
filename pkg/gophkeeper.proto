@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/ruskiiamov/gophkeeper/internal/proto";
+
+message RegisterRequest {
+    string login = 1;
+    string password = 2;
+}
+
+message RegisterResponse {
+    string token = 1;
+}
+
+message LoginRequest {
+    string login = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    string token = 1;
+}
+
+message UpdatePassRequest {
+    string login = 1;
+    string old_password = 2;
+    string new_password = 3;
+}
+
+message UpdatePassResponse {
+    string token = 1;
+}
+
+message Metadata {
+    string id = 1;
+    string checksum = 2;
+    bool deleted = 3;
+    int64 updated_at = 4;
+}
+
+message GetMetadataRequest {}
+
+message GetMetadataResponse {
+    repeated Metadata metadata = 1;
+}
+
+message AddEntryRequest {
+    bytes chunk = 1;
+}
+
+message AddEntryResponse {}
+
+message GetEntryRequest {
+    string id = 1;
+}
+
+message GetEntryResponse {
+    bytes chunk = 1;
+}
+
+message UpdateEntryRequest {
+    bytes chunk = 1;
+}
+
+message UpdateEntryResponse {
+    string confirmation = 1;
+}
+
+message DeleteEntryRequest {
+    string id = 1;
+}
+
+message DeleteEntryResponse {}
+
+service GophKeeper {
+    rpc Register(RegisterRequest) returns (RegisterResponse) {}
+    rpc Login(LoginRequest) returns (LoginResponse) {}
+    rpc UpdatePass(UpdatePassRequest) returns (UpdatePassResponse) {}
+    rpc GetMetadata(GetMetadataRequest) returns (GetMetadataResponse) {}
+    rpc AddEntry(stream AddEntryRequest) returns (AddEntryResponse) {}
+    rpc GetEntry(GetEntryRequest) returns (stream GetEntryResponse) {}
+    rpc UpdateEntry(stream UpdateEntryRequest) returns (stream UpdateEntryResponse) {}
+    rpc DeleteEntry(DeleteEntryRequest) returns (DeleteEntryResponse) {}
+}
