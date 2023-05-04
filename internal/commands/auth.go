@@ -77,7 +77,7 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 			return err
 		}
 
-		ok, err := dm.CheckSync(creds.Token)
+		ok, err := dm.CheckSync(creds)
 		if err != nil {
 			return err
 		}
@@ -85,12 +85,12 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 			return errors.New("synchronization required")
 		}
 
-		newKey, err := am.UpdatePass(creds.Token, newPassword)
+		newKey, err := am.UpdatePass(creds, newPassword)
 		if err != nil {
 			return err
 		}
 
-		err = dm.UpdateEncryption(creds.UserID, creds.Key, newKey)
+		err = dm.UpdateEncryption(creds, newKey)
 		if err != nil {
 			return err
 		}

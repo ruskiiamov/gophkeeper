@@ -26,7 +26,7 @@ func (c *clientManager) GetCreds() (*dto.Creds, error) {
 	return &dto.Creds{}, nil
 }
 
-func (c *clientManager) UpdatePass(token, newPassword string) (newKey string, err error) {
+func (c *clientManager) UpdatePass(creds *dto.Creds, newPassword string) (newKey string, err error) {
 	//TODO
 	return "", nil
 }

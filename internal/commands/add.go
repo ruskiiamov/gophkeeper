@@ -1,78 +1,145 @@
 package commands
 
 import (
-	"fmt"
+	"os"
 
+	"github.com/ruskiiamov/gophkeeper/internal/dto"
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	addCmd.PersistentFlags().StringVarP(&description, "description", "d", "", "Custom data description")
+func addCmd(am accessManager, dm dataManager) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "add",
+		Short: "Add data to the system",
+	}
 
-	cardCmd.Flags().StringVarP(&number, "number", "n", "", "Bank card number (required)")
-	cardCmd.Flags().StringVarP(&owner, "owner", "o", "", "Bank card owner (required)")
-	cardCmd.Flags().StringVarP(&date, "expire", "e", "", "Bank card expire date (required)")
-	cardCmd.Flags().StringVarP(&code, "code", "c", "", "Bank card CVV/CVC (required)")
-	cardCmd.Flags().StringVarP(&pin, "pin", "p", "", "Bank card pin-code (required)")
+	var description string
+	cmd.PersistentFlags().StringVarP(&description, "description", "d", "", "Custom data description")
 
-	cardCmd.MarkFlagRequired("number")
-	cardCmd.MarkFlagRequired("owner")
-	cardCmd.MarkFlagRequired("expire")
-	cardCmd.MarkFlagRequired("code")
-	cardCmd.MarkFlagRequired("pin")
+	cmd.AddCommand(
+		logPassCmd(am, dm, description), 
+		textCmd(am, dm, description),
+		fileCmd(am, dm, description),
+		cardCmd(am, dm, description),
+	)
 
-	addCmd.AddCommand(credCmd)
-	addCmd.AddCommand(textCmd)
-	addCmd.AddCommand(fileCmd)
-	addCmd.AddCommand(cardCmd)
+	return cmd
 }
 
-var (
-	description string
-	number      string
-	owner       string
-	date        string
-	code        string
-	pin         string
-)
+func logPassCmd(am accessManager, dm dataManager, d string) *cobra.Command {
+	run := func(cmd *cobra.Command, args []string) error {
+		lp := &dto.LogPass{
+			Login: args[0],
+			Password: args[1],
+		}
 
-var addCmd = &cobra.Command{
-	Use:   "add",
-	Short: "Add data to the system",
+		creds, err := am.GetCreds()
+		if err != nil {
+			return err
+		}
+
+		err = dm.AddLogPass(creds, lp, d)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return &cobra.Command{
+		Use:   "logpass <login> <password>",
+		Short: "Add login-password pair to the system",
+		Args:  cobra.ExactArgs(2),
+		RunE: run,
+	}
 }
 
-var credCmd = &cobra.Command{
-	Use:   "creds <login> <password>",
-	Short: "Add login-password pair to the system",
-	Args:  cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("adding creds %s / %s ...\n", args[0], args[1])
-	},
+func textCmd(am accessManager, dm dataManager, d string) *cobra.Command {
+	run := func(cmd *cobra.Command, args []string) error {
+		text := args[0]
+
+		creds, err := am.GetCreds()
+		if err != nil {
+			return err
+		}
+
+		err = dm.AddText(creds, text, d)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+	
+	return  &cobra.Command{
+		Use:   "text '<any text>'",
+		Short: "Add any text to the system",
+		Args:  cobra.ExactArgs(1),
+		RunE: run,
+	}
 }
 
-var textCmd = &cobra.Command{
-	Use:   "text '<any text>'",
-	Short: "Add any text to the system",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("adding text %s ...\n", args[0])
-	},
+func fileCmd(am accessManager, dm dataManager, d string) *cobra.Command {
+	run := func(cmd *cobra.Command, args []string) error {
+		path := args[0]
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return err
+		}
+
+		creds, err := am.GetCreds()
+		if err != nil {
+			return err
+		}
+
+		err = dm.AddFile(creds, path, d)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return &cobra.Command{
+		Use:   "file <path/to/your/file>",
+		Short: "Add file to the system",
+		Args:  cobra.ExactArgs(1),
+		RunE: run,
+	}
 }
 
-var fileCmd = &cobra.Command{
-	Use:   "file <path/to/your/file>",
-	Short: "Add file to the system",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("adding file %s ...\n", args[0])
-		fmt.Printf("description: '%s'\n", description)
-	},
-}
+func cardCmd(am accessManager, dm dataManager, d string) *cobra.Command {
+	card := new(dto.Card)
+	
+	run := func(cmd *cobra.Command, args []string) error {
+		creds, err := am.GetCreds()
+		if err != nil {
+			return err
+		}
 
-var cardCmd = &cobra.Command{
-	Use:   "card ",
-	Short: "Add bank card data to the system",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("adding bank card %s ...\n", number)
-	},
+		err = dm.AddCard(creds, card, d)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+	
+	cmd := &cobra.Command{
+		Use:   "card",
+		Short: "Add bank card data to the system",
+		RunE: run,
+	}
+
+	cmd.Flags().StringVarP(&(card.Number), "number", "n", "", "Bank card number (required)")
+	cmd.Flags().StringVarP(&(card.Owner), "owner", "o", "", "Bank card owner (required)")
+	cmd.Flags().StringVarP(&(card.Expire), "expire", "e", "", "Bank card expire date (required)")
+	cmd.Flags().StringVarP(&(card.Code), "code", "c", "", "Bank card CVV/CVC (required)")
+	cmd.Flags().StringVarP(&(card.Pin), "pin", "p", "", "Bank card pin-code (required)")
+	cmd.MarkFlagRequired("number")
+	cmd.MarkFlagRequired("owner")
+	cmd.MarkFlagRequired("expire")
+	cmd.MarkFlagRequired("code")
+	cmd.MarkFlagRequired("pin")
+	
+	return cmd
 }
