@@ -28,7 +28,7 @@ func registerCmd(am accessManager) *cobra.Command {
 			return err
 		}
 
-		err = am.Login(login, password)
+		_, err = am.Login(login, password)
 		if err != nil {
 			return err
 		}
@@ -44,12 +44,41 @@ func registerCmd(am accessManager) *cobra.Command {
 	}
 }
 
-func loginCmd(am accessManager) *cobra.Command {
+func loginCmd(am accessManager, dm dataManager) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) error {
 		login := args[0]
 		password := args[1]
 
-		err := am.Login(login, password)
+		credsNotChanged, err := am.Login(login, password)
+		if err != nil {
+			return err
+		}
+
+		if credsNotChanged {
+			return nil
+		}
+
+		creds, err := am.GetCredsByLogin(login)
+		if err != nil {
+			return nil
+		}
+
+		key, err := am.GetKey(password)
+		if err != nil {
+			return err
+		}
+
+		err = dm.UpdateEncryption(creds, key)
+		if err != nil {
+			return err
+		}
+
+		err = am.UpdateCreds(login, password)
+		if err != nil {
+			return err
+		}
+
+		_, err = am.Login(login, password)
 		if err != nil {
 			return err
 		}
@@ -67,7 +96,8 @@ func loginCmd(am accessManager) *cobra.Command {
 
 func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) error {
-		newPassword := args[0]
+		oldPassword := args[0]
+		newPassword := args[1]
 		if len(newPassword) < minPasswordLen {
 			return errors.New("password too short")
 		}
@@ -85,12 +115,12 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 			return errors.New("synchronization required")
 		}
 
-		newKey, err := am.UpdatePass(creds, newPassword)
+		err = am.UpdatePass(creds, oldPassword, newPassword)
 		if err != nil {
 			return err
 		}
 
-		err = dm.UpdateEncryption(creds, newKey)
+		err = am.Logout(creds)
 		if err != nil {
 			return err
 		}
@@ -99,7 +129,7 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 	}
 
 	return &cobra.Command{
-		Use:   "updpass <new_password>",
+		Use:   "updpass <old_password> <new_password>",
 		Short: "Update user password",
 		Args:  cobra.ExactArgs(1),
 		RunE:  run,

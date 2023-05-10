@@ -15,3 +15,7 @@ func (c *config) GetLocalDSN() string {
 func (c *config) GetServerAddr() string {
 	return ":3200"//TODO
 }
+
+func (c *config) GetFilesPath() string {
+	return ""//TODO
+}

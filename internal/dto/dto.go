@@ -25,9 +25,16 @@ type Card struct {
 	Pin    string
 }
 
-type Entry struct {
-	ID string
-	Type enum.Type
+type Metadata struct {
+	Type        enum.Type
 	Description string
-	UpdatedAt time.Time
+	Checksum    string
+	Deleted     bool
+	UpdatedAt   time.Time
+}
+
+type Entry struct {
+	ID     string
+	UserID string
+	Metadata
 }

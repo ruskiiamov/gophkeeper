@@ -3,6 +3,7 @@ module github.com/ruskiiamov/gophkeeper
 go 1.19
 
 require (
+	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/jackc/pgx/v5 v5.3.1
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
@@ -23,5 +24,6 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
+	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.8.0 // indirect
 )

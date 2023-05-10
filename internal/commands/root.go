@@ -7,9 +7,13 @@ import (
 
 type accessManager interface {
 	Register(login, password string) error
-	Login(login, password string) error
+	Login(login, password string) (credsNotChanged bool, err error)
 	GetCreds() (*dto.Creds, error)
-	UpdatePass(creds *dto.Creds, newPassword string) (newKey string, err error)
+	GetCredsByLogin(login string) (*dto.Creds, error)
+	GetKey(password string) (string, error)
+	UpdateCreds(login, password string) error
+	UpdatePass(creds *dto.Creds, oldPassword, newPassword string) error
+	Logout(creds *dto.Creds) error
 }
 
 type dataManager interface {
@@ -33,7 +37,7 @@ func New(am accessManager, dm dataManager) *cobra.Command {
 
 	cmd.AddCommand(
 		registerCmd(am), 
-		loginCmd(am),
+		loginCmd(am, dm),
 		updatePassCmd(am, dm),
 		addCmd(am, dm),
 		syncCmd(am, dm),

@@ -3,8 +3,8 @@
     "version": "2.2.11",
     "width": 2000,
     "height": 2000,
-    "scrollTop": -145,
-    "scrollLeft": -164,
+    "scrollTop": -22,
+    "scrollLeft": -474,
     "zoomLevel": 1,
     "show": {
       "tableComment": true,
@@ -183,29 +183,6 @@
               "widthDefault": 60
             },
             "id": "7beded34-f460-4658-8e92-a07c5411f6e2"
-          },
-          {
-            "name": "auth_ttl",
-            "comment": "unix timestamp",
-            "dataType": "INTEGER",
-            "default": "",
-            "option": {
-              "autoIncrement": false,
-              "primaryKey": false,
-              "unique": false,
-              "notNull": false
-            },
-            "ui": {
-              "active": false,
-              "pk": false,
-              "fk": false,
-              "pfk": false,
-              "widthName": 60,
-              "widthComment": 89.419921875,
-              "widthDataType": 60,
-              "widthDefault": 60
-            },
-            "id": "bc36e061-643a-4737-97e5-a999983cbdc1"
           }
         ],
         "ui": {
@@ -339,29 +316,6 @@
             "id": "68390dc5-858e-4d08-b0cf-c9e825640fec"
           },
           {
-            "name": "data",
-            "comment": "",
-            "dataType": "BLOB",
-            "default": "",
-            "option": {
-              "autoIncrement": false,
-              "primaryKey": false,
-              "unique": false,
-              "notNull": false
-            },
-            "ui": {
-              "active": false,
-              "pk": false,
-              "fk": false,
-              "pfk": false,
-              "widthName": 60,
-              "widthComment": 60,
-              "widthDataType": 60,
-              "widthDefault": 60
-            },
-            "id": "4d22ba6a-d149-4c75-883f-59657a7c4a45"
-          },
-          {
             "name": "deleted",
             "comment": "bool flag",
             "dataType": "INTEGER",
@@ -409,10 +363,10 @@
           }
         ],
         "ui": {
-          "active": true,
+          "active": false,
           "left": 607,
           "top": 505,
-          "zIndex": 4,
+          "zIndex": 1,
           "widthName": 60,
           "widthComment": 60
         },
@@ -437,7 +391,7 @@
             "e3af26ac-e906-4006-8881-d6165c50fe8c"
           ],
           "x": 801.83203125,
-          "y": 439.5,
+          "y": 419,
           "direction": "bottom"
         },
         "end": {

@@ -28,7 +28,7 @@ func main() {
 	accessManager := access.NewClientManager(storage, grpcClient)
 
 	dataCipher := cipher.New()
-	dataKeeper := data.NewClientKeeper(dataCipher, storage, grpcClient)
+	dataKeeper := data.NewClientKeeper(config.GetFilesPath(), dataCipher, storage, grpcClient)
 
 	cmd := commands.New(accessManager, dataKeeper)
 	cmd.Execute()
