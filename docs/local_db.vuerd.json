@@ -3,8 +3,8 @@
     "version": "2.2.11",
     "width": 2000,
     "height": 2000,
-    "scrollTop": -2,
-    "scrollLeft": -115,
+    "scrollTop": -22,
+    "scrollLeft": -474,
     "zoomLevel": 1,
     "show": {
       "tableComment": true,
@@ -116,6 +116,52 @@
             "id": "67e4e25e-40ef-470e-8c99-d43436b471af"
           },
           {
+            "name": "key",
+            "comment": "",
+            "dataType": "VARCHAR",
+            "default": "",
+            "option": {
+              "autoIncrement": false,
+              "primaryKey": false,
+              "unique": false,
+              "notNull": true
+            },
+            "ui": {
+              "active": false,
+              "pk": false,
+              "fk": false,
+              "pfk": false,
+              "widthName": 60,
+              "widthComment": 60,
+              "widthDataType": 64.6005859375,
+              "widthDefault": 60
+            },
+            "id": "d1034685-15d0-4864-85d4-89c1e9173774"
+          },
+          {
+            "name": "token",
+            "comment": "",
+            "dataType": "VARCHAR",
+            "default": "",
+            "option": {
+              "autoIncrement": false,
+              "primaryKey": false,
+              "unique": false,
+              "notNull": true
+            },
+            "ui": {
+              "active": false,
+              "pk": false,
+              "fk": false,
+              "pfk": false,
+              "widthName": 60,
+              "widthComment": 60,
+              "widthDataType": 64.6005859375,
+              "widthDefault": 60
+            },
+            "id": "c3f2b157-26bc-474e-9a78-8719a67156a1"
+          },
+          {
             "name": "authenticated",
             "comment": "bool flag (only one record with 1)",
             "dataType": "INTEGER",
@@ -137,36 +183,13 @@
               "widthDefault": 60
             },
             "id": "7beded34-f460-4658-8e92-a07c5411f6e2"
-          },
-          {
-            "name": "auth_ttl",
-            "comment": "unix timestamp",
-            "dataType": "INTEGER",
-            "default": "",
-            "option": {
-              "autoIncrement": false,
-              "primaryKey": false,
-              "unique": false,
-              "notNull": false
-            },
-            "ui": {
-              "active": false,
-              "pk": false,
-              "fk": false,
-              "pfk": false,
-              "widthName": 60,
-              "widthComment": 89.419921875,
-              "widthDataType": 60,
-              "widthDefault": 60
-            },
-            "id": "bc36e061-643a-4737-97e5-a999983cbdc1"
           }
         ],
         "ui": {
           "active": false,
           "left": 586,
           "top": 227,
-          "zIndex": 107,
+          "zIndex": 2,
           "widthName": 60,
           "widthComment": 60
         },
@@ -247,7 +270,7 @@
             "id": "4aaa59ce-46b4-46f4-bd3d-b601cfe12bc9"
           },
           {
-            "name": "name",
+            "name": "description",
             "comment": "",
             "dataType": "VARCHAR",
             "default": "",
@@ -262,7 +285,7 @@
               "pk": false,
               "fk": false,
               "pfk": false,
-              "widthName": 60,
+              "widthName": 64.8671875,
               "widthComment": 60,
               "widthDataType": 64.6005859375,
               "widthDefault": 60
@@ -291,29 +314,6 @@
               "widthDefault": 60
             },
             "id": "68390dc5-858e-4d08-b0cf-c9e825640fec"
-          },
-          {
-            "name": "data",
-            "comment": "",
-            "dataType": "BLOB",
-            "default": "",
-            "option": {
-              "autoIncrement": false,
-              "primaryKey": false,
-              "unique": false,
-              "notNull": false
-            },
-            "ui": {
-              "active": false,
-              "pk": false,
-              "fk": false,
-              "pfk": false,
-              "widthName": 60,
-              "widthComment": 60,
-              "widthDataType": 60,
-              "widthDefault": 60
-            },
-            "id": "4d22ba6a-d149-4c75-883f-59657a7c4a45"
           },
           {
             "name": "deleted",
@@ -366,7 +366,7 @@
           "active": false,
           "left": 607,
           "top": 505,
-          "zIndex": 132,
+          "zIndex": 1,
           "widthName": 60,
           "widthComment": 60
         },
@@ -391,7 +391,7 @@
             "e3af26ac-e906-4006-8881-d6165c50fe8c"
           ],
           "x": 801.83203125,
-          "y": 398.5,
+          "y": 419,
           "direction": "bottom"
         },
         "end": {
