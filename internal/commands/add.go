@@ -1,7 +1,9 @@
 package commands
 
 import (
+	"context"
 	"os"
+	"time"
 
 	"github.com/ruskiiamov/gophkeeper/internal/dto"
 	"github.com/spf13/cobra"
@@ -33,12 +35,15 @@ func logPassCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 			Password: args[1],
 		}
 
-		creds, err := am.GetCreds()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		creds, err := am.GetCreds(ctx)
 		if err != nil {
 			return err
 		}
 
-		err = dm.AddLogPass(creds, lp, d)
+		err = dm.AddLogPass(ctx, creds, lp, d)
 		if err != nil {
 			return err
 		}
@@ -58,12 +63,15 @@ func textCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) error {
 		text := args[0]
 
-		creds, err := am.GetCreds()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		creds, err := am.GetCreds(ctx)
 		if err != nil {
 			return err
 		}
 
-		err = dm.AddText(creds, text, d)
+		err = dm.AddText(ctx, creds, text, d)
 		if err != nil {
 			return err
 		}
@@ -86,12 +94,15 @@ func fileCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 			return err
 		}
 
-		creds, err := am.GetCreds()
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		defer cancel()
+
+		creds, err := am.GetCreds(ctx)
 		if err != nil {
 			return err
 		}
 
-		err = dm.AddFile(creds, path, d)
+		err = dm.AddFile(ctx, creds, path, d)
 		if err != nil {
 			return err
 		}
@@ -111,12 +122,15 @@ func cardCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 	card := new(dto.Card)
 	
 	run := func(cmd *cobra.Command, args []string) error {
-		creds, err := am.GetCreds()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		creds, err := am.GetCreds(ctx)
 		if err != nil {
 			return err
 		}
 
-		err = dm.AddCard(creds, card, d)
+		err = dm.AddCard(ctx, creds, card, d)
 		if err != nil {
 			return err
 		}

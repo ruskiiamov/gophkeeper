@@ -1,7 +1,9 @@
 package commands
 
 import (
+	"context"
 	"errors"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -23,12 +25,10 @@ func registerCmd(am accessManager) *cobra.Command {
 			return errors.New("password too short")
 		}
 
-		err := am.Register(login, password)
-		if err != nil {
-			return err
-		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
-		_, err = am.Login(login, password)
+		err := am.Register(ctx, login, password)
 		if err != nil {
 			return err
 		}
@@ -49,7 +49,10 @@ func loginCmd(am accessManager, dm dataManager) *cobra.Command {
 		login := args[0]
 		password := args[1]
 
-		credsNotChanged, err := am.Login(login, password)
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		defer cancel()
+
+		creds, credsNotChanged, err := am.Login(ctx, login, password)
 		if err != nil {
 			return err
 		}
@@ -58,27 +61,18 @@ func loginCmd(am accessManager, dm dataManager) *cobra.Command {
 			return nil
 		}
 
-		creds, err := am.GetCredsByLogin(login)
+		oldCreds, err := am.GetCredsByLogin(ctx, login)
 		if err != nil {
 			return nil
 		}
 
-		key, err := am.GetKey(password)
+		newKey := am.GetKey(ctx, login, password)
+		err = dm.UpdateEncryption(ctx, oldCreds, newKey)
 		if err != nil {
 			return err
 		}
 
-		err = dm.UpdateEncryption(creds, key)
-		if err != nil {
-			return err
-		}
-
-		err = am.UpdateCreds(login, password)
-		if err != nil {
-			return err
-		}
-
-		_, err = am.Login(login, password)
+		err = am.UpdateCredsAndAuthenticate(ctx, login, password, creds.Token)
 		if err != nil {
 			return err
 		}
@@ -102,12 +96,19 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 			return errors.New("password too short")
 		}
 
-		creds, err := am.GetCreds()
+		if oldPassword == newPassword {
+			return errors.New("passwords are equal")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		creds, err := am.GetCreds(ctx)
 		if err != nil {
 			return err
 		}
 
-		ok, err := dm.CheckSync(creds)
+		ok, err := dm.CheckSync(ctx, creds)
 		if err != nil {
 			return err
 		}
@@ -115,12 +116,12 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 			return errors.New("synchronization required")
 		}
 
-		err = am.UpdatePass(creds, oldPassword, newPassword)
+		err = am.UpdatePass(ctx, creds, oldPassword, newPassword)
 		if err != nil {
 			return err
 		}
 
-		err = am.Logout(creds)
+		err = am.Logout(ctx)
 		if err != nil {
 			return err
 		}

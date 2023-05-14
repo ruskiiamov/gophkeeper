@@ -24,22 +24,22 @@ func (s *storage) Close() {
 	s.conn.Close()
 }
 
-func (s *storage) GetEntries(userID string) ([]*dto.Entry, error) {
+func (s *storage) GetEntries(userID string) ([]*dto.ClientEntry, error) {
 	//TODO
-	return []*dto.Entry{}, nil
+	return []*dto.ClientEntry{}, nil
 }
 
-func (s *storage) AddEntry(entry *dto.Entry) error {
+func (s *storage) AddEntry(entry *dto.ClientEntry) error {
 	//TODO
 	return nil
 }
 
-func (s *storage) GetEntry(userID, id string) (*dto.Entry, error) {
+func (s *storage) GetEntry(userID, id string) (*dto.ClientEntry, error) {
 	//TODO
-	return &dto.Entry{}, nil
+	return &dto.ClientEntry{}, nil
 }
 
-func (s *storage) AddOrUpdateEntry(entry *dto.Entry) error {
+func (s *storage) AddOrUpdateEntry(entry *dto.ClientEntry) error {
 	//TODO
 	return nil
 }

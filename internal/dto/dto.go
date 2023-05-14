@@ -8,7 +8,7 @@ import (
 
 type Creds struct {
 	UserID string
-	Key    string
+	Key    []byte
 	Token  string
 }
 
@@ -27,14 +27,21 @@ type Card struct {
 
 type Metadata struct {
 	Type        enum.Type
+	FileName    string
 	Description string
 	Checksum    string
 	Deleted     bool
 	UpdatedAt   time.Time
 }
 
-type Entry struct {
+type ClientEntry struct {
 	ID     string
 	UserID string
 	Metadata
+}
+
+type ServerEntry struct {
+	ID       string
+	UserID   string
+	Metadata []byte
 }

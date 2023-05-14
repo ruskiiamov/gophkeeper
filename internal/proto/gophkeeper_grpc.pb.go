@@ -22,7 +22,7 @@ const (
 	GophKeeper_Register_FullMethodName    = "/proto.GophKeeper/Register"
 	GophKeeper_Login_FullMethodName       = "/proto.GophKeeper/Login"
 	GophKeeper_UpdatePass_FullMethodName  = "/proto.GophKeeper/UpdatePass"
-	GophKeeper_GetMetadata_FullMethodName = "/proto.GophKeeper/GetMetadata"
+	GophKeeper_GetEntries_FullMethodName  = "/proto.GophKeeper/GetEntries"
 	GophKeeper_AddEntry_FullMethodName    = "/proto.GophKeeper/AddEntry"
 	GophKeeper_GetEntry_FullMethodName    = "/proto.GophKeeper/GetEntry"
 	GophKeeper_UpdateEntry_FullMethodName = "/proto.GophKeeper/UpdateEntry"
@@ -36,7 +36,7 @@ type GophKeeperClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	UpdatePass(ctx context.Context, in *UpdatePassRequest, opts ...grpc.CallOption) (*UpdatePassResponse, error)
-	GetMetadata(ctx context.Context, in *GetMetadataRequest, opts ...grpc.CallOption) (*GetMetadataResponse, error)
+	GetEntries(ctx context.Context, in *GetEntriesRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error)
 	AddEntry(ctx context.Context, opts ...grpc.CallOption) (GophKeeper_AddEntryClient, error)
 	GetEntry(ctx context.Context, in *GetEntryRequest, opts ...grpc.CallOption) (GophKeeper_GetEntryClient, error)
 	UpdateEntry(ctx context.Context, opts ...grpc.CallOption) (GophKeeper_UpdateEntryClient, error)
@@ -78,9 +78,9 @@ func (c *gophKeeperClient) UpdatePass(ctx context.Context, in *UpdatePassRequest
 	return out, nil
 }
 
-func (c *gophKeeperClient) GetMetadata(ctx context.Context, in *GetMetadataRequest, opts ...grpc.CallOption) (*GetMetadataResponse, error) {
-	out := new(GetMetadataResponse)
-	err := c.cc.Invoke(ctx, GophKeeper_GetMetadata_FullMethodName, in, out, opts...)
+func (c *gophKeeperClient) GetEntries(ctx context.Context, in *GetEntriesRequest, opts ...grpc.CallOption) (*GetEntriesResponse, error) {
+	out := new(GetEntriesResponse)
+	err := c.cc.Invoke(ctx, GophKeeper_GetEntries_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ type GophKeeperServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	UpdatePass(context.Context, *UpdatePassRequest) (*UpdatePassResponse, error)
-	GetMetadata(context.Context, *GetMetadataRequest) (*GetMetadataResponse, error)
+	GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error)
 	AddEntry(GophKeeper_AddEntryServer) error
 	GetEntry(*GetEntryRequest, GophKeeper_GetEntryServer) error
 	UpdateEntry(GophKeeper_UpdateEntryServer) error
@@ -221,8 +221,8 @@ func (UnimplementedGophKeeperServer) Login(context.Context, *LoginRequest) (*Log
 func (UnimplementedGophKeeperServer) UpdatePass(context.Context, *UpdatePassRequest) (*UpdatePassResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePass not implemented")
 }
-func (UnimplementedGophKeeperServer) GetMetadata(context.Context, *GetMetadataRequest) (*GetMetadataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMetadata not implemented")
+func (UnimplementedGophKeeperServer) GetEntries(context.Context, *GetEntriesRequest) (*GetEntriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEntries not implemented")
 }
 func (UnimplementedGophKeeperServer) AddEntry(GophKeeper_AddEntryServer) error {
 	return status.Errorf(codes.Unimplemented, "method AddEntry not implemented")
@@ -303,20 +303,20 @@ func _GophKeeper_UpdatePass_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GophKeeper_GetMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetMetadataRequest)
+func _GophKeeper_GetEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEntriesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GophKeeperServer).GetMetadata(ctx, in)
+		return srv.(GophKeeperServer).GetEntries(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GophKeeper_GetMetadata_FullMethodName,
+		FullMethod: GophKeeper_GetEntries_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GophKeeperServer).GetMetadata(ctx, req.(*GetMetadataRequest))
+		return srv.(GophKeeperServer).GetEntries(ctx, req.(*GetEntriesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -432,8 +432,8 @@ var GophKeeper_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _GophKeeper_UpdatePass_Handler,
 		},
 		{
-			MethodName: "GetMetadata",
-			Handler:    _GophKeeper_GetMetadata_Handler,
+			MethodName: "GetEntries",
+			Handler:    _GophKeeper_GetEntries_Handler,
 		},
 		{
 			MethodName: "DeleteEntry",

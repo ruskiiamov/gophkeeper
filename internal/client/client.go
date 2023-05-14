@@ -11,7 +11,7 @@ import (
 
 type client struct {
 	conn *grpc.ClientConn
-	c pb.GophKeeperClient
+	c    pb.GophKeeperClient
 }
 
 func New(serverAddr string) (*client, error) {
@@ -21,10 +21,10 @@ func New(serverAddr string) (*client, error) {
 	}
 
 	c := pb.NewGophKeeperClient(conn)
-	
+
 	return &client{
 		conn: conn,
-		c: c,
+		c:    c,
 	}, nil
 }
 
@@ -32,9 +32,9 @@ func (c *client) Close() {
 	c.conn.Close()
 }
 
-func (c *client) GetEntries(token string) ([]*dto.Entry, error) {
+func (c *client) GetEntries(token string) ([]*dto.ClientEntry, error) {
 	//TODO
-	return []*dto.Entry{}, nil
+	return []*dto.ClientEntry{}, nil
 }
 
 func (c *client) AddEntry(token, id string, encryptedMetadata []byte, src io.Reader) error {

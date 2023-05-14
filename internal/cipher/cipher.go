@@ -8,7 +8,7 @@ func New() *cipher {
 	return &cipher{}
 }
 
-func (c *cipher) Init(key string) error {
+func (c *cipher) Init(key []byte) error {
 	//TODO
 	return nil
 }
