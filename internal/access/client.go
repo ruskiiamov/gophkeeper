@@ -28,18 +28,18 @@ type provider interface {
 }
 
 type clientManager struct {
-	storage storage
+	storage  storage
 	provider provider
 }
 
 func NewClientManager(s storage, p provider) *clientManager {
 	return &clientManager{
-		storage: s,
+		storage:  s,
 		provider: p,
 	}
 }
 
-func (c * clientManager) Register(ctx context.Context, login, password string) error {
+func (c *clientManager) Register(ctx context.Context, login, password string) error {
 	creds, err := c.storage.GetUserCreds(ctx, login)
 	if err != nil {
 		return fmt.Errorf("storage get user error: %w", err)
@@ -64,7 +64,7 @@ func (c * clientManager) Register(ctx context.Context, login, password string) e
 	return nil
 }
 
-func (c * clientManager) Login(ctx context.Context, login, password string) (creds *dto.Creds, credsNotChanged bool, err error) {
+func (c *clientManager) Login(ctx context.Context, login, password string) (creds *dto.Creds, credsNotChanged bool, err error) {
 	serverPass := getServerPass(password)
 	key := c.GetKey(ctx, login, password)
 
@@ -136,7 +136,7 @@ func (c *clientManager) UpdateCredsAndAuthenticate(ctx context.Context, login, p
 		return fmt.Errorf("storage update user key error: %w", err)
 	}
 
-	if err := c.storage.AuthenticateUser(ctx, login, token); err != nil{
+	if err := c.storage.AuthenticateUser(ctx, login, token); err != nil {
 		return fmt.Errorf("storage authenticate user error: %w", err)
 	}
 

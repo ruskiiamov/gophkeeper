@@ -1,7 +1,6 @@
 package configuration
 
 type config struct {
-
 }
 
 func ReadConfig() *config {
@@ -9,13 +8,13 @@ func ReadConfig() *config {
 }
 
 func (c *config) GetLocalDSN() string {
-	return "test.db"//TODO
+	return "test.db" //TODO
 }
 
 func (c *config) GetServerAddr() string {
-	return ":3200"//TODO
+	return ":3200" //TODO
 }
 
 func (c *config) GetFilesPath() string {
-	return ""//TODO
+	return "" //TODO
 }

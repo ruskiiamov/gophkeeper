@@ -10,7 +10,7 @@ import (
 
 const (
 	minPasswordLen = 8
-	minLoginLen = 6
+	minLoginLen    = 6
 )
 
 func registerCmd(am accessManager) *cobra.Command {
