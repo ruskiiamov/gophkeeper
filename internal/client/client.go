@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"io"
 
 	"github.com/ruskiiamov/gophkeeper/internal/dto"
@@ -32,22 +33,37 @@ func (c *client) Close() {
 	c.conn.Close()
 }
 
-func (c *client) GetEntries(token string) ([]*dto.ClientEntry, error) {
+func (c *client) Register(ctx context.Context, login, password string) (id string, err error) {
 	//TODO
-	return []*dto.ClientEntry{}, nil
+	return "", nil
 }
 
-func (c *client) AddEntry(token, id string, encryptedMetadata []byte, src io.Reader) error {
+func (c *client) Login(ctx context.Context, login, password string) (id, token string, err error) {
+	//TODO
+	return "", "", nil
+}
+
+func (c *client) UpdatePass(ctx context.Context, token, oldPassword, newPassword string) error {
 	//TODO
 	return nil
 }
 
-func (c *client) GetEntry(token, id string, dst io.Writer) (encryptedMetadata []byte, err error) {
+func (c *client) GetEntries(ctx context.Context, token string) ([]*dto.ServerEntry, error) {
 	//TODO
-	return []byte{}, nil
+	return []*dto.ServerEntry{}, nil
 }
 
-func (c *client) UpdateEntry(token, id string, encryptedMetadata []byte, src io.Reader) error {
+func (c *client) AddEntry(ctx context.Context, token string, entry *dto.ServerEntry, src io.Reader) error {
+	//TODO
+	return nil
+}
+
+func (c *client) GetEntry(ctx context.Context, token, id string, dst io.Writer) (*dto.ServerEntry, error) {
+	//TODO
+	return &dto.ServerEntry{}, nil
+}
+
+func (c *client) UpdateEntry(ctx context.Context, token string, entry *dto.ServerEntry, src io.Reader) error {
 	//TODO
 	return nil
 }
