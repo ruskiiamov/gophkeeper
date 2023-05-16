@@ -11,6 +11,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/ruskiiamov/gophkeeper/internal/dto"
 	"github.com/ruskiiamov/gophkeeper/internal/enum"
+	"github.com/ruskiiamov/gophkeeper/internal/errs"
 )
 
 type storage struct {
@@ -128,6 +129,9 @@ func (s *storage) GetAuthenticatedUserCreds(ctx context.Context) (*dto.Creds, er
 	err := s.conn.QueryRowContext(
 		ctx, `SELECT id, key, token FROM users WHERE authenticated = 1;`,
 	).Scan(&(creds.UserID), &key, &token)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errs.ErrUnauthenticated
+	}
 	if err != nil {
 		return nil, fmt.Errorf("select row error: %w", err)
 	}

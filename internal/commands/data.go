@@ -2,10 +2,12 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/ruskiiamov/gophkeeper/internal/enum"
+	"github.com/ruskiiamov/gophkeeper/internal/errs"
 	"github.com/spf13/cobra"
 )
 
@@ -15,11 +17,17 @@ func syncCmd(am accessManager, dm dataManager) *cobra.Command {
 		defer cancel()
 
 		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
 
 		err = dm.Sync(ctx, creds)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
@@ -40,6 +48,9 @@ func listCmd(am accessManager, dm dataManager) *cobra.Command {
 		defer cancel()
 
 		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
@@ -69,6 +80,9 @@ func getCmd(am accessManager, dm dataManager) *cobra.Command {
 		defer cancel()
 
 		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}

@@ -18,6 +18,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/ruskiiamov/gophkeeper/internal/dto"
 	"github.com/ruskiiamov/gophkeeper/internal/enum"
+	"github.com/ruskiiamov/gophkeeper/internal/errs"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -446,7 +447,7 @@ func (c *clientKeeper) getAllEntries(ctx context.Context, creds *dto.Creds) (map
 	serverEntries := make(chan []*dto.ClientEntry, 1)
 	g.Go(func() error {
 		entries, err := c.provider.GetEntries(ctx, creds.Token)
-		if err != nil {
+		if err != nil && !errors.Is(err, errs.ErrNotFound) {
 			return fmt.Errorf("provider get entries error: %w", err)
 		}
 

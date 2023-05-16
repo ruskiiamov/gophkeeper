@@ -2,10 +2,12 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"os"
 	"time"
 
 	"github.com/ruskiiamov/gophkeeper/internal/dto"
+	"github.com/ruskiiamov/gophkeeper/internal/errs"
 	"github.com/spf13/cobra"
 )
 
@@ -39,6 +41,9 @@ func logPassCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 		defer cancel()
 
 		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
@@ -67,6 +72,9 @@ func textCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 		defer cancel()
 
 		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
@@ -98,6 +106,9 @@ func fileCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 		defer cancel()
 
 		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
@@ -126,6 +137,9 @@ func cardCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 		defer cancel()
 
 		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}

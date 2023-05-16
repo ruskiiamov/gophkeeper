@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ruskiiamov/gophkeeper/internal/errs"
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +30,9 @@ func registerCmd(am accessManager) *cobra.Command {
 		defer cancel()
 
 		err := am.Register(ctx, login, password)
+		if errors.Is(err, errs.ErrUserExists) {
+			return errors.New("user already exists")
+		}
 		if err != nil {
 			return err
 		}
@@ -53,6 +57,9 @@ func loginCmd(am accessManager, dm dataManager) *cobra.Command {
 		defer cancel()
 
 		creds, credsNotChanged, err := am.Login(ctx, login, password)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("wrong login password pair")
+		}
 		if err != nil {
 			return err
 		}
@@ -104,11 +111,17 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 		defer cancel()
 
 		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
 
 		ok, err := dm.CheckSync(ctx, creds)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
@@ -117,6 +130,12 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 		}
 
 		err = am.UpdatePass(ctx, creds, oldPassword, newPassword)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
+		if errors.Is(err, errs.ErrWrongPassword) {
+			return errors.New("wrong old password")
+		}
 		if err != nil {
 			return err
 		}
