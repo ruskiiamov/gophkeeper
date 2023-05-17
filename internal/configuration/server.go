@@ -18,3 +18,7 @@ func (s *serverConfig) GetAddr() string {
 func (s *serverConfig) GetFilesPath() string {
 	return "" //TODO
 }
+
+func (s *serverConfig) GetAuthSecret() string {
+	return ""//TODO
+}

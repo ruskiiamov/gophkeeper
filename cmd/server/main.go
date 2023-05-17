@@ -24,7 +24,7 @@ func main() {
 
 	fileStorage := file.NewStorage(config.GetFilesPath())
 
-	accessManager := access.NewServerManager(dbConnector)
+	accessManager := access.NewServerManager(config.GetAuthSecret(), dbConnector)
 	dataKeeper := data.NewServerKeeper(dbConnector, fileStorage)
 
 	server, err := server.New(config.GetAddr(), accessManager, dataKeeper)

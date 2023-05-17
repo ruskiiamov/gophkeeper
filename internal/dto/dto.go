@@ -45,3 +45,9 @@ type ServerEntry struct {
 	UserID   string
 	Metadata []byte
 }
+
+type User struct {
+	ID       string
+	Login    string
+	PassHash string
+}
