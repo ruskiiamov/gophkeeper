@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	config := configuration.ReadConfig()
+	config := configuration.ReadClientConfig()
 
 	storage, err := localstorage.New(config.GetLocalDSN())
 	if err != nil {

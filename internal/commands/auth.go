@@ -136,6 +136,9 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 		if errors.Is(err, errs.ErrWrongPassword) {
 			return errors.New("wrong old password")
 		}
+		if errors.Is(err, errs.ErrEntryLocked) {
+			return errors.New("entry locked by other client")
+		}
 		if err != nil {
 			return err
 		}

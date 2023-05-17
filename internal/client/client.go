@@ -97,6 +97,8 @@ func (c *client) UpdatePass(ctx context.Context, token, oldPassword, newPassword
 				return errs.ErrUnauthenticated
 			case codes.InvalidArgument:
 				return errs.ErrWrongPassword
+			case codes.Aborted:
+				return errs.ErrEntryLocked
 			}
 			return fmt.Errorf("server error: %s", e.Message())
 		}
@@ -112,17 +114,14 @@ func (c *client) GetEntries(ctx context.Context, token string) ([]*dto.ServerEnt
 	resp, err := c.grpc.GetEntries(ctx, &pb.GetEntriesRequest{})
 	if err != nil {
 		if e, ok := status.FromError(err); ok {
-			switch e.Code() {
-			case codes.Unauthenticated:
+			if e.Code() == codes.Unauthenticated {
 				return nil, errs.ErrUnauthenticated
-			case codes.NotFound:
-				return nil, errs.ErrNotFound
 			}
 			return nil, fmt.Errorf("server error: %s", e.Message())
 		}
 		return nil, fmt.Errorf("grpc get entries error: %w", err)
 	}
-
+	
 	serverEntries := make([]*dto.ServerEntry, len(resp.Entry))
 	for i, entry := range resp.Entry {
 		serverEntry := &dto.ServerEntry{
@@ -179,7 +178,7 @@ func (c *client) AddEntry(ctx context.Context, token string, entry *dto.ServerEn
 
 func (c *client) GetEntry(ctx context.Context, token, id string, dst io.Writer) (*dto.ServerEntry, error) {
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(authorization, token))
-	
+
 	stream, err := c.grpc.GetEntry(ctx, &pb.GetEntryRequest{Id: id})
 	if err != nil {
 		return nil, fmt.Errorf("grpc get entry error: %w", err)
@@ -189,9 +188,12 @@ func (c *client) GetEntry(ctx context.Context, token, id string, dst io.Writer) 
 	if err != nil {
 		return nil, fmt.Errorf("stream header error: %w", err)
 	}
+	if len(header.Get(id)) < 1 || len(header.Get(userID)) < 1 || len(header.Get(metadataBin)) < 1 {
+		return nil, errors.New("lack of entry metadata")
+	}
 	entry := &dto.ServerEntry{
-		ID: header.Get(id)[0],
-		UserID: header.Get(userID)[0],
+		ID:       header.Get(id)[0],
+		UserID:   header.Get(userID)[0],
 		Metadata: []byte(header.Get(metadataBin)[0]),
 	}
 
