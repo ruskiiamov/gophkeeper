@@ -73,6 +73,9 @@ func (s *storage) GetUserCreds(ctx context.Context, login string) (*dto.Creds, e
 	err := s.conn.QueryRowContext(
 		ctx, `SELECT id, key, token FROM users WHERE login = ?;`, login,
 	).Scan(&(creds.UserID), &key, &token)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errs.ErrNotFound
+	}
 	if err != nil {
 		return nil, fmt.Errorf("select row error: %w", err)
 	}
@@ -172,7 +175,7 @@ func (s *storage) Logout(ctx context.Context) error {
 
 func (s *storage) GetEntries(ctx context.Context, userID string) ([]*dto.ClientEntry, error) {
 	entries := make([]*dto.ClientEntry, 0)
-	
+
 	rows, err := s.conn.QueryContext(
 		ctx,
 		`SELECT id, type, file_name, description, checksum, deleted, updated_at
@@ -201,23 +204,23 @@ func (s *storage) GetEntries(ctx context.Context, userID string) ([]*dto.ClientE
 		if entryType.Valid {
 			entry.Type = enum.Type(entryType.Int32)
 		}
-	
+
 		if fileName.Valid {
 			entry.FileName = fileName.String
 		}
-	
+
 		if description.Valid {
 			entry.Description = description.String
 		}
-	
+
 		if checksum.Valid {
 			entry.Checksum = checksum.String
 		}
-	
+
 		if deleted == 1 {
 			entry.Deleted = true
 		}
-	
+
 		entry.UpdatedAt = time.Unix(int64(updatedAt), 0)
 
 		entries = append(entries, entry)
@@ -317,7 +320,7 @@ func (s *storage) GetEntry(ctx context.Context, userID, id string) (*dto.ClientE
 }
 
 func (s *storage) AddOrUpdateEntry(ctx context.Context, entry *dto.ClientEntry) error {
-	entry, err := s.GetEntry(ctx, entry.UserID, entry.ID)
+	_, err := s.GetEntry(ctx, entry.UserID, entry.ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return s.AddEntry(ctx, entry)
 	}

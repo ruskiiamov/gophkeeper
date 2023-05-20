@@ -17,8 +17,7 @@ func addCmd(am accessManager, dm dataManager) *cobra.Command {
 		Short: "Add data to the system",
 	}
 
-	var description string
-	cmd.PersistentFlags().StringVarP(&description, "description", "d", "", "Custom data description")
+	description := new(string)
 
 	cmd.AddCommand(
 		logPassCmd(am, dm, description),
@@ -27,10 +26,12 @@ func addCmd(am accessManager, dm dataManager) *cobra.Command {
 		cardCmd(am, dm, description),
 	)
 
+	cmd.PersistentFlags().StringVarP(description, "description", "d", "", "Custom data description")
+
 	return cmd
 }
 
-func logPassCmd(am accessManager, dm dataManager, d string) *cobra.Command {
+func logPassCmd(am accessManager, dm dataManager, d *string) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) error {
 		lp := &dto.LogPass{
 			Login:    args[0],
@@ -48,7 +49,7 @@ func logPassCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 			return err
 		}
 
-		err = dm.AddLogPass(ctx, creds, lp, d)
+		err = dm.AddLogPass(ctx, creds, lp, *d)
 		if err != nil {
 			return err
 		}
@@ -64,7 +65,7 @@ func logPassCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 	}
 }
 
-func textCmd(am accessManager, dm dataManager, d string) *cobra.Command {
+func textCmd(am accessManager, dm dataManager, d *string) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) error {
 		text := args[0]
 
@@ -79,7 +80,7 @@ func textCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 			return err
 		}
 
-		err = dm.AddText(ctx, creds, text, d)
+		err = dm.AddText(ctx, creds, text, *d)
 		if err != nil {
 			return err
 		}
@@ -95,7 +96,7 @@ func textCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 	}
 }
 
-func fileCmd(am accessManager, dm dataManager, d string) *cobra.Command {
+func fileCmd(am accessManager, dm dataManager, d *string) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) error {
 		path := args[0]
 		if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -113,7 +114,7 @@ func fileCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 			return err
 		}
 
-		err = dm.AddFile(ctx, creds, path, d)
+		err = dm.AddFile(ctx, creds, path, *d)
 		if err != nil {
 			return err
 		}
@@ -129,7 +130,7 @@ func fileCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 	}
 }
 
-func cardCmd(am accessManager, dm dataManager, d string) *cobra.Command {
+func cardCmd(am accessManager, dm dataManager, d *string) *cobra.Command {
 	card := new(dto.Card)
 
 	run := func(cmd *cobra.Command, args []string) error {
@@ -144,7 +145,7 @@ func cardCmd(am accessManager, dm dataManager, d string) *cobra.Command {
 			return err
 		}
 
-		err = dm.AddCard(ctx, creds, card, d)
+		err = dm.AddCard(ctx, creds, card, *d)
 		if err != nil {
 			return err
 		}

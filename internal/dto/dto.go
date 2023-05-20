@@ -47,7 +47,9 @@ type ServerEntry struct {
 }
 
 type User struct {
-	ID       string
-	Login    string
-	PassHash string
+	ID          string
+	Login       string
+	PassHash    string
+	Locked      bool
+	LockedUntil time.Time
 }

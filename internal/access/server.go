@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -15,7 +14,7 @@ import (
 )
 
 const (
-	ttl = 30 * time.Minute
+	ttl          = 30 * time.Minute
 	lockedSuffix = "-locked"
 )
 
@@ -27,7 +26,9 @@ type serverManager struct {
 type dbConnector interface {
 	AddUser(ctx context.Context, login, passHash string) (id string, err error)
 	GetUser(ctx context.Context, login string) (*dto.User, error)
-	GetAndUpdatePassHash(ctx context.Context, userID string, passHashCh chan<- string, lockedPassHashCh <-chan string, errCh chan<- error)
+	GetUserByID(ctx context.Context, userID string) (*dto.User, error)
+	CheckAndLockUser(ctx context.Context, userID string, passHashCh chan<- string, confirmationCh <-chan bool, errCh chan<- error)
+	UnlockUser(ctx context.Context, userID string) error
 	UpdatePassHash(ctx context.Context, userID, passHash string) error
 }
 
@@ -111,41 +112,60 @@ func (s *serverManager) Auth(ctx context.Context, token string) (userID string, 
 		return "", errs.ErrUnauthenticated
 	}
 
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		return "", fmt.Errorf("fb get user by id error: %w", err)
+	}
+
+	if time.Unix(intCreatedAt, 0).Before(user.LockedUntil) {
+		return "", errs.ErrUnauthenticated
+	}
+
 	return userID, nil
 }
 
 func (s *serverManager) CheckAndLockUser(ctx context.Context, userID, password string) error {
-	passHashCh := make(chan string)
-	lockedPassHashCh := make(chan string)
-	errCh := make(chan error)
+	passHashCh := make(chan string, 1)
+	confirmationCh := make(chan bool, 1)
+	errCh := make(chan error, 1)
 
-	go s.db.GetAndUpdatePassHash(ctx, userID, passHashCh, lockedPassHashCh, errCh)
+	go s.db.CheckAndLockUser(ctx, userID, passHashCh, confirmationCh, errCh)
 
-	passHash := <-passHashCh
+	var passHash string
+	var err error
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("context canceled")
+	case err = <-errCh:
+		if err != nil {
+			return fmt.Errorf("db check and lock user error: %w", err)
+		}
+	case passHash = <-passHashCh:
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(passHash), []byte(password)); err != nil {
+		confirmationCh <- false
 		return errs.ErrWrongPassword
 	}
 
-	lockedPassHashCh <- passHash + lockedSuffix
+	confirmationCh <- true
 
-	return <-errCh
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("context canceled")
+	case err = <-errCh:
+	}
+
+	return err
 }
 
 func (s *serverManager) UnlockUser(ctx context.Context, userID string) error {
-	passHashCh := make(chan string)
-	initialPassHashCh := make(chan string)
-	errCh := make(chan error)
-
-	go s.db.GetAndUpdatePassHash(ctx, userID, passHashCh, initialPassHashCh, errCh)
-
-	passHash := <-passHashCh
-	if !strings.HasSuffix(passHash, lockedSuffix) {
-		return nil
+	err := s.db.UnlockUser(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("db unlock user error: %w", err)
 	}
 
-	initialPassHashCh <- strings.TrimSuffix(passHash, lockedSuffix)
-
-	return <-errCh
+	return nil
 }
 
 func (s *serverManager) UpdatePass(ctx context.Context, userID, password string) error {

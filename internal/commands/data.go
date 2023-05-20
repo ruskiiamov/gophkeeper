@@ -60,7 +60,9 @@ func listCmd(am accessManager, dm dataManager) *cobra.Command {
 			return err
 		}
 
-		fmt.Println(list) //TODO show results in table
+		for _, item := range list {
+			fmt.Println(item.ID, item.Type, item.Description) //TODO show results in table
+		}
 
 		return nil
 	}

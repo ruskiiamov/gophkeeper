@@ -8,7 +8,7 @@ func ReadServerConfig() *serverConfig {
 }
 
 func (s *serverConfig) GetDSN() string {
-	return "test.db" //TODO
+	return "postgres://root:root@localhost:54320/gophkeeper?sslmode=disable" //TODO
 }
 
 func (s *serverConfig) GetAddr() string {
@@ -16,9 +16,9 @@ func (s *serverConfig) GetAddr() string {
 }
 
 func (s *serverConfig) GetFilesPath() string {
-	return "" //TODO
+	return "./server_data" //TODO
 }
 
 func (s *serverConfig) GetAuthSecret() string {
-	return ""//TODO
+	return "secret" //TODO
 }

@@ -1,3 +1,5 @@
 .idea
 .vscode
 test.db
+client_data
+server_data

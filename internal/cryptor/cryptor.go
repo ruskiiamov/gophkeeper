@@ -3,64 +3,25 @@ package cryptor
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"errors"
 	"fmt"
+
+	"github.com/ruskiiamov/gophkeeper/internal/data"
 )
 
 const keySize = 32
 
+type builder struct{}
+
 type cryptor struct {
-	encryptCipher cipher.Stream
-	decryptCipher cipher.Stream
+	stream cipher.Stream
+	slice  []byte
 }
 
-func New() *cryptor {
-	return &cryptor{}
+func New() *builder {
+	return &builder{}
 }
 
-func (c *cryptor) SetKeys(encryptKey, decryptKey []byte) error {
-	if encryptKey != nil {
-		encryptCipher, err := createCipher(encryptKey)
-		if err != nil {
-			return fmt.Errorf("create encrypt cipher error: %w", err)
-		}
-		c.encryptCipher = encryptCipher
-	}
-
-	if decryptKey != nil {
-		decryptCipher, err := createCipher(decryptKey)
-		if err != nil {
-			return fmt.Errorf("create decrypt cipher error: %w", err)
-		}
-		c.decryptCipher = decryptCipher
-	}
-
-	return nil
-}
-
-func (c *cryptor) Encrypt(chunk []byte) ([]byte, error) {
-	if c.encryptCipher == nil {
-		return nil, errors.New("encrypt key not set")
-	}
-
-	res := make([]byte, len(chunk))
-	c.encryptCipher.XORKeyStream(res, chunk)
-
-	return res, nil
-}
-
-func (c *cryptor) Decrypt(chunk []byte) ([]byte, error) {
-	if c.decryptCipher == nil {
-		return nil, errors.New("decrypt key not set")
-	}
-
-	res := make([]byte, len(chunk))
-	c.encryptCipher.XORKeyStream(res, chunk)
-
-	return res, nil
-}
-
-func createCipher(key []byte) (cipher.Stream, error) {
+func (b *builder) Make(key []byte) (data.Cipher, error) {
 	if len(key) != keySize {
 		return nil, fmt.Errorf("wrong key size")
 	}
@@ -77,5 +38,14 @@ func createCipher(key []byte) (cipher.Stream, error) {
 		return nil, fmt.Errorf("new stream creation error: %w", err)
 	}
 
-	return stream, nil
+	return &cryptor{stream: stream}, nil
+}
+
+func (c *cryptor) Crypt(chunk []byte) []byte {
+	if len(c.slice) != len(chunk) {
+		c.slice = make([]byte, len(chunk))
+	}
+	c.stream.XORKeyStream(c.slice, chunk)
+
+	return c.slice
 }

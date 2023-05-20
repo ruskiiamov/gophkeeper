@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
@@ -15,10 +17,10 @@ import (
 )
 
 const (
-	authorization = "authorization"
-	id            = "id"
-	userID        = "user_id"
-	metadataBin   = "metadata-bin"
+	mdAuthorization = "authorization"
+	mdID            = "id"
+	mdUserID        = "user_id"
+	mdMetadata      = "metadata"
 )
 
 type gkServer struct {
@@ -67,7 +69,7 @@ func (g *gkServer) UpdatePass(ctx context.Context, in *pb.UpdatePassRequest) (*p
 	}
 
 	err = g.dk.CheckAndLockEntries(ctx, userID)
-	if errors.Is(err, errs.ErrEntryLocked) {
+	if errors.Is(err, errs.ErrLocked) {
 		return nil, status.Error(codes.Aborted, err.Error())
 	}
 	if err != nil {
@@ -76,6 +78,9 @@ func (g *gkServer) UpdatePass(ctx context.Context, in *pb.UpdatePassRequest) (*p
 	defer g.dk.UnlockEntries(ctx, userID)
 
 	err = g.am.CheckAndLockUser(ctx, userID, in.OldPassword)
+	if errors.Is(err, errs.ErrLocked) {
+		return nil, status.Error(codes.Aborted, err.Error())
+	}
 	if errors.Is(err, errs.ErrWrongPassword) {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -134,13 +139,19 @@ func (g *gkServer) AddEntry(stream pb.GophKeeper_AddEntryServer) error {
 	}
 
 	md, _ := metadata.FromIncomingContext(ctx)
-	if len(md.Get(id)) < 1 || len(md.Get(userID)) < 1 || len(md.Get(metadataBin)) < 1 {
+	if len(md.Get(mdID)) < 1 || len(md.Get(mdUserID)) < 1 || len(md.Get(mdMetadata)) < 1 {
 		return status.Error(codes.InvalidArgument, "lack of entry metadata")
 	}
+
+	metadata, err := base64.StdEncoding.DecodeString(md.Get(mdMetadata)[0])
+	if err != nil {
+		return fmt.Errorf("base64 decoding error: %w", err)
+	}
+
 	entry := &dto.ServerEntry{
-		ID:       md.Get(id)[0],
-		UserID:   md.Get(userID)[0],
-		Metadata: []byte(md.Get(metadataBin)[0]),
+		ID:       md.Get(mdID)[0],
+		UserID:   md.Get(mdUserID)[0],
+		Metadata: metadata,
 	}
 	if userID != entry.UserID {
 		return status.Error(codes.InvalidArgument, "wrong user id")
@@ -156,6 +167,10 @@ func (g *gkServer) AddEntry(stream pb.GophKeeper_AddEntryServer) error {
 		select {
 		case <-ctx.Done():
 			return status.Error(codes.Canceled, "context done")
+		case err := <-errCh:
+			if err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
 		default:
 		}
 
@@ -171,7 +186,12 @@ func (g *gkServer) AddEntry(stream pb.GophKeeper_AddEntryServer) error {
 	}
 
 	close(chunkCh)
-	err = <-errCh
+
+	select {
+	case <-ctx.Done():
+		return status.Error(codes.Canceled, "context done")
+	case err = <-errCh:
+	}
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -195,11 +215,21 @@ func (g *gkServer) GetEntry(in *pb.GetEntryRequest, stream pb.GophKeeper_GetEntr
 	errCh := make(chan error)
 	go g.dk.GetEntry(ctx, in.Id, userID, metadataCh, chunkCh, errCh)
 
-	entry := <-metadataCh
+	entry := new(dto.ServerEntry)
+	select {
+	case <-ctx.Done():
+		return status.Error(codes.Canceled, "context done")
+	case err := <-errCh:
+		if err != nil {
+			return status.Error(codes.Internal, err.Error())
+		}
+	case entry = <-metadataCh:
+	}
+
 	err = stream.SendHeader(metadata.Pairs(
-		id, entry.ID,
-		userID, entry.UserID,
-		metadataBin, string(entry.Metadata),
+		mdID, entry.ID,
+		mdUserID, entry.UserID,
+		mdMetadata, base64.StdEncoding.EncodeToString(entry.Metadata),
 	))
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
@@ -209,6 +239,10 @@ func (g *gkServer) GetEntry(in *pb.GetEntryRequest, stream pb.GophKeeper_GetEntr
 		select {
 		case <-ctx.Done():
 			return status.Error(codes.Canceled, "context done")
+		case err := <-errCh:
+			if err != nil {
+				return status.Error(codes.Internal, err.Error())
+			}
 		default:
 		}
 
@@ -223,7 +257,16 @@ func (g *gkServer) GetEntry(in *pb.GetEntryRequest, stream pb.GophKeeper_GetEntr
 		}
 	}
 
-	return <-errCh
+	select {
+	case <-ctx.Done():
+		return status.Error(codes.Canceled, "context done")
+	case err = <-errCh:
+	}
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	return nil
 }
 
 func (g *gkServer) UpdateEntry(stream pb.GophKeeper_UpdateEntryServer) error {
@@ -236,20 +279,26 @@ func (g *gkServer) UpdateEntry(stream pb.GophKeeper_UpdateEntryServer) error {
 	}
 
 	md, _ := metadata.FromIncomingContext(ctx)
-	if len(md.Get(id)) < 1 || len(md.Get(userID)) < 1 || len(md.Get(metadataBin)) < 1 {
+	if len(md.Get(mdID)) < 1 || len(md.Get(mdUserID)) < 1 || len(md.Get(mdMetadata)) < 1 {
 		return status.Error(codes.InvalidArgument, "lack of entry metadata")
 	}
+
+	metadata, err := base64.StdEncoding.DecodeString(md.Get(mdMetadata)[0])
+	if err != nil {
+		return fmt.Errorf("base64 decoding error: %w", err)
+	}
+
 	entry := &dto.ServerEntry{
-		ID:       md.Get(id)[0],
-		UserID:   md.Get(userID)[0],
-		Metadata: []byte(md.Get(metadataBin)[0]),
+		ID:       md.Get(mdID)[0],
+		UserID:   md.Get(mdUserID)[0],
+		Metadata: metadata,
 	}
 	if userID != entry.UserID {
 		return status.Error(codes.InvalidArgument, "wrong user id")
 	}
 
 	err = g.dk.CheckAndLockEntry(ctx, entry.ID, userID)
-	if errors.Is(err, errs.ErrEntryLocked) {
+	if errors.Is(err, errs.ErrLocked) {
 		return status.Error(codes.Aborted, err.Error())
 	}
 	if err != nil {
@@ -284,7 +333,12 @@ func (g *gkServer) UpdateEntry(stream pb.GophKeeper_UpdateEntryServer) error {
 	}
 
 	close(chunkCh)
-	err = <-errCh
+
+	select {
+	case <-ctx.Done():
+		return status.Error(codes.Canceled, "context done")
+	case err = <-errCh:
+	}
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
@@ -299,10 +353,10 @@ func (g *gkServer) DeleteEntry(ctx context.Context, in *pb.DeleteEntryRequest) (
 
 func (g *gkServer) auth(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok || len(md.Get(authorization)) < 1 {
+	if !ok || len(md.Get(mdAuthorization)) < 1 {
 		return "", status.Error(codes.Unauthenticated, "auth token is needed")
 	}
-	token := md.Get(authorization)[0]
+	token := md.Get(mdAuthorization)[0]
 
 	userID, err := g.am.Auth(ctx, token)
 	if errors.Is(err, errs.ErrUnauthenticated) {

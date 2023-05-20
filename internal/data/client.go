@@ -27,10 +27,12 @@ const (
 	initialSuffix = "-initial"
 )
 
-type cipher interface {
-	SetKeys(encryptKey, decryptKey []byte) error
-	Encrypt(chunk []byte) ([]byte, error)
-	Decrypt(chunk []byte) ([]byte, error)
+type cipherBuilder interface {
+	Make(key []byte) (Cipher, error)
+}
+
+type Cipher interface {
+	Crypt(chunk []byte) []byte
 }
 
 type storage interface {
@@ -50,12 +52,12 @@ type provider interface {
 
 type clientKeeper struct {
 	filesPath string
-	cipher    cipher
+	cipher    cipherBuilder
 	storage   storage
 	provider  provider
 }
 
-func NewClientKeeper(filesPath string, c cipher, s storage, p provider) *clientKeeper {
+func NewClientKeeper(filesPath string, c cipherBuilder, s storage, p provider) *clientKeeper {
 	return &clientKeeper{
 		filesPath: filesPath,
 		cipher:    c,
@@ -85,7 +87,7 @@ func (c *clientKeeper) UpdateEncryption(ctx context.Context, creds *dto.Creds, n
 		return fmt.Errorf("storage get entries error: %w", err)
 	}
 
-	g, ctx := errgroup.WithContext(ctx)
+	g, gCtx := errgroup.WithContext(ctx)
 	checksums := make(map[string]chan string)
 
 	defer c.removeFilesWithSuffix(creds.UserID, tempSuffix)
@@ -96,7 +98,7 @@ func (c *clientKeeper) UpdateEncryption(ctx context.Context, creds *dto.Creds, n
 		checksums[entry.ID] = ch
 
 		g.Go(func() error {
-			checksum, err := c.prepareNewEncryption(ctx, entry, creds.Key, newKey)
+			checksum, err := c.prepareNewEncryption(gCtx, entry, creds.Key, newKey)
 			ch <- checksum
 			return err
 		})
@@ -108,6 +110,7 @@ func (c *clientKeeper) UpdateEncryption(ctx context.Context, creds *dto.Creds, n
 
 	defer c.rollbackFiles(creds.UserID)
 
+	g = new(errgroup.Group)
 	for _, entry := range entries {
 		entry := entry
 		g.Go(func() error {
@@ -121,6 +124,7 @@ func (c *clientKeeper) UpdateEncryption(ctx context.Context, creds *dto.Creds, n
 		return fmt.Errorf("errgroup error: %w", err)
 	}
 
+	g = new(errgroup.Group)
 	for _, entry := range entries {
 		entry := entry
 		g.Go(func() error {
@@ -297,7 +301,7 @@ func (c *clientKeeper) Sync(ctx context.Context, creds *dto.Creds) error {
 	errs := make(map[string]chan error)
 
 	for id, entry := range entries {
-		if entry[0].Checksum == entry[1].Checksum {
+		if entry[0] != nil && entry[1] != nil && entry[0].Checksum == entry[1].Checksum {
 			continue
 		}
 
@@ -336,7 +340,7 @@ func (c *clientKeeper) Sync(ctx context.Context, creds *dto.Creds) error {
 	for id, chErr := range errs {
 		err = <-chErr
 		if err != nil {
-			sb.WriteString(fmt.Sprintf("%s sync error: %s\n", id, err))
+			sb.WriteString(fmt.Sprintf("\n%s sync error: %s\n", id, err))
 		}
 	}
 	if joinedErrStr := sb.String(); joinedErrStr != "" {
@@ -371,7 +375,7 @@ func (c *clientKeeper) GetLogPass(ctx context.Context, creds *dto.Creds, id stri
 		return nil, fmt.Errorf("get data error: %w", err)
 	}
 
-	var logPass *dto.LogPass
+	logPass := new(dto.LogPass)
 
 	if err := gob.NewDecoder(&buffer).Decode(logPass); err != nil {
 		return nil, fmt.Errorf("gob decode error: %w", err)
@@ -431,7 +435,7 @@ func (c *clientKeeper) GetCard(ctx context.Context, creds *dto.Creds, id string)
 		return nil, fmt.Errorf("get data error: %w", err)
 	}
 
-	var card *dto.Card
+	card := new(dto.Card)
 
 	if err := gob.NewDecoder(&buffer).Decode(card); err != nil {
 		return nil, fmt.Errorf("gob decode error: %w", err)
@@ -450,20 +454,18 @@ func (c *clientKeeper) getAllEntries(ctx context.Context, creds *dto.Creds) (map
 			return fmt.Errorf("provider get entries error: %w", err)
 		}
 
-		if err := c.cipher.SetKeys(nil, creds.Key); err != nil {
-			return fmt.Errorf("cipher set keys error: %w", err)
-		}
-
 		clientEntries := make([]*dto.ClientEntry, 0, len(entries))
 		for _, entry := range entries {
-			decryptedMetadata, err := c.cipher.Decrypt(entry.Metadata)
+			cipher, err := c.cipher.Make(creds.Key)
 			if err != nil {
-				return fmt.Errorf("cipher decrypt error: %w", err)
+				return fmt.Errorf("cipher make error: %w", err)
 			}
+
+			decryptedMetadata := cipher.Crypt(entry.Metadata)
 			reader := bytes.NewReader(decryptedMetadata)
 
-			var metadata dto.Metadata
-			err = gob.NewDecoder(reader).Decode(&metadata)
+			metadata := new(dto.Metadata)
+			err = gob.NewDecoder(reader).Decode(metadata)
 			if err != nil {
 				return fmt.Errorf("gob decoding error: %w", err)
 			}
@@ -471,7 +473,7 @@ func (c *clientKeeper) getAllEntries(ctx context.Context, creds *dto.Creds) (map
 			clientEntries = append(clientEntries, &dto.ClientEntry{
 				ID:       entry.ID,
 				UserID:   entry.UserID,
-				Metadata: metadata,
+				Metadata: *metadata,
 			})
 		}
 
@@ -528,12 +530,12 @@ func (c *clientKeeper) addData(ctx context.Context, creds *dto.Creds, src io.Rea
 
 	h := md5.New()
 
-	err = c.cipher.SetKeys(creds.Key, nil)
+	cipher, err := c.cipher.Make(creds.Key)
 	if err != nil {
-		return "", fmt.Errorf("cipher set keys error: %s", err)
+		return "", fmt.Errorf("cipher make error: %s", err)
 	}
 
-	chunk := make([]byte, 0, chunkSize)
+	chunk := make([]byte, chunkSize)
 	var encryptedChunk []byte
 	for {
 		select {
@@ -548,10 +550,7 @@ func (c *clientKeeper) addData(ctx context.Context, creds *dto.Creds, src io.Rea
 			break
 		}
 
-		encryptedChunk, err = c.cipher.Encrypt(chunk)
-		if err != nil {
-			return "", fmt.Errorf("cipher encrypt error: %w", err)
-		}
+		encryptedChunk = cipher.Crypt(chunk)
 
 		_, err = h.Write(encryptedChunk)
 		if err != nil {
@@ -592,12 +591,12 @@ func (c *clientKeeper) getData(ctx context.Context, creds *dto.Creds, id string,
 	}
 	defer file.Close()
 
-	err = c.cipher.SetKeys(nil, creds.Key)
+	cipher, err := c.cipher.Make(creds.Key)
 	if err != nil {
-		return fmt.Errorf("cipher set keys error: %w", err)
+		return fmt.Errorf("cipher make error: %w", err)
 	}
 
-	chunk := make([]byte, 0, chunkSize)
+	chunk := make([]byte, chunkSize)
 	var decryptedChunk []byte
 	for {
 		select {
@@ -612,10 +611,7 @@ func (c *clientKeeper) getData(ctx context.Context, creds *dto.Creds, id string,
 			break
 		}
 
-		decryptedChunk, err = c.cipher.Decrypt(chunk)
-		if err != nil {
-			return fmt.Errorf("cipher decrypt error: %w", err)
-		}
+		decryptedChunk = cipher.Crypt(chunk)
 
 		_, err = dst.Write(decryptedChunk)
 		if err != nil {
@@ -639,19 +635,16 @@ func (c *clientKeeper) upload(ctx context.Context, creds *dto.Creds, id string) 
 	}
 	defer file.Close()
 
-	err = c.cipher.SetKeys(creds.Key, nil)
+	cipher, err := c.cipher.Make(creds.Key)
 	if err != nil {
-		return fmt.Errorf("cipher set keys error: %w", err)
+		return fmt.Errorf("cipher make error: %w", err)
 	}
 
 	var buffer bytes.Buffer
 	if err := gob.NewEncoder(&buffer).Encode(entry.Metadata); err != nil {
 		return fmt.Errorf("fob encoding error: %w", err)
 	}
-	encryptedMetadata, err := c.cipher.Encrypt(buffer.Bytes())
-	if err != nil {
-		return fmt.Errorf("cipher encrypt error: %w", err)
-	}
+	encryptedMetadata := cipher.Crypt(buffer.Bytes())
 
 	serverEntry := &dto.ServerEntry{
 		ID:       id,
@@ -674,15 +667,15 @@ func (c *clientKeeper) download(ctx context.Context, creds *dto.Creds, id string
 	tempPath := filepath.Join(c.filesPath, creds.UserID, id+tempSuffix)
 	defer os.Remove(tempPath)
 
-	file, err := os.OpenFile(tempPath, os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0777)
+	file, err := os.OpenFile(tempPath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return fmt.Errorf("open file error: %w", err)
 	}
 	defer file.Close()
 
-	err = c.cipher.SetKeys(nil, creds.Key)
+	cipher, err := c.cipher.Make(creds.Key)
 	if err != nil {
-		return fmt.Errorf("cipher set keys error: %w", err)
+		return fmt.Errorf("cipher make error: %w", err)
 	}
 
 	serverEntry, err := c.provider.GetEntry(ctx, creds.Token, id, file)
@@ -690,10 +683,7 @@ func (c *clientKeeper) download(ctx context.Context, creds *dto.Creds, id string
 		return fmt.Errorf("provider get entry error: %w", err)
 	}
 
-	metadata, err := c.cipher.Decrypt(serverEntry.Metadata)
-	if err != nil {
-		return fmt.Errorf("cipher decrypt error: %w", err)
-	}
+	metadata := cipher.Crypt(serverEntry.Metadata)
 	buffer := bytes.NewBuffer(metadata)
 
 	entry := &dto.ClientEntry{ID: id, UserID: creds.UserID}
@@ -727,19 +717,16 @@ func (c *clientKeeper) update(ctx context.Context, creds *dto.Creds, id string) 
 	}
 	defer file.Close()
 
-	err = c.cipher.SetKeys(creds.Key, nil)
+	cipher, err := c.cipher.Make(creds.Key)
 	if err != nil {
-		return fmt.Errorf("cipher set keys error: %w", err)
+		return fmt.Errorf("cipher make error: %w", err)
 	}
 
 	var buffer bytes.Buffer
 	if err := gob.NewEncoder(&buffer).Encode(entry.Metadata); err != nil {
 		return fmt.Errorf("gob encoding error: %w", err)
 	}
-	encryptedMetadata, err := c.cipher.Encrypt(buffer.Bytes())
-	if err != nil {
-		return fmt.Errorf("cipher encrypt error: %w", err)
-	}
+	encryptedMetadata := cipher.Crypt(buffer.Bytes())
 
 	serverEntry := &dto.ServerEntry{
 		ID:       id,
@@ -771,12 +758,17 @@ func (c *clientKeeper) prepareNewEncryption(ctx context.Context, entry *dto.Clie
 
 	h := md5.New()
 
-	err = c.cipher.SetKeys(newKey, oldKey)
+	oldCipher, err := c.cipher.Make(oldKey)
 	if err != nil {
-		return "", fmt.Errorf("cipher set keys error: %w", err)
+		return "", fmt.Errorf("cipher make error: %w", err)
 	}
 
-	chunk := make([]byte, 0, chunkSize)
+	newCipher, err := c.cipher.Make(newKey)
+	if err != nil {
+		return "", fmt.Errorf("cipher make error: %w", err)
+	}
+
+	chunk := make([]byte, chunkSize)
 	for {
 		select {
 		case <-ctx.Done():
@@ -790,15 +782,8 @@ func (c *clientKeeper) prepareNewEncryption(ctx context.Context, entry *dto.Clie
 			break
 		}
 
-		decryptedChunk, err := c.cipher.Decrypt(chunk)
-		if err != nil {
-			return "", fmt.Errorf("cipher decrypt error: %w", err)
-		}
-
-		encryptedChunk, err := c.cipher.Encrypt(decryptedChunk)
-		if err != nil {
-			return "", fmt.Errorf("cipher encrypt error: %w", err)
-		}
+		decryptedChunk := oldCipher.Crypt(chunk)
+		encryptedChunk := newCipher.Crypt(decryptedChunk)
 
 		_, err = h.Write(encryptedChunk)
 		if err != nil {

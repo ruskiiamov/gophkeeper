@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/ruskiiamov/gophkeeper/internal/dto"
+	"github.com/ruskiiamov/gophkeeper/internal/errs"
 	"golang.org/x/exp/slices"
 )
 
@@ -41,7 +42,7 @@ func NewClientManager(s storage, p provider) *clientManager {
 
 func (c *clientManager) Register(ctx context.Context, login, password string) error {
 	creds, err := c.storage.GetUserCreds(ctx, login)
-	if err != nil {
+	if err != nil && !errors.Is(err, errs.ErrNotFound) {
 		return fmt.Errorf("storage get user error: %w", err)
 	}
 	if creds != nil {

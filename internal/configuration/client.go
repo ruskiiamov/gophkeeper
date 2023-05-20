@@ -8,7 +8,7 @@ func ReadClientConfig() *clientConfig {
 }
 
 func (c *clientConfig) GetLocalDSN() string {
-	return "test.db" //TODO
+	return "./test.db" //TODO
 }
 
 func (c *clientConfig) GetServerAddr() string {
@@ -16,5 +16,5 @@ func (c *clientConfig) GetServerAddr() string {
 }
 
 func (c *clientConfig) GetFilesPath() string {
-	return "" //TODO
+	return "./client_data" //TODO
 }

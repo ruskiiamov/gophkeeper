@@ -27,12 +27,12 @@ type dataKeeper interface {
 	ForceDeleteEntries(ctx context.Context, userID string) error
 	GetEntries(ctx context.Context, userID string) ([]*dto.ServerEntry, error)
 	AddEntry(ctx context.Context, entry *dto.ServerEntry, chunkCh <-chan []byte, errCh chan<- error)
-	GetEntry(ctx context.Context, id, userID string, metadataCh chan<- *dto.ServerEntry, chunkCh chan<- []byte , errCh chan<- error)
+	GetEntry(ctx context.Context, id, userID string, metadataCh chan<- *dto.ServerEntry, chunkCh chan<- []byte, errCh chan<- error)
 	UpdateEntry(ctx context.Context, entry *dto.ServerEntry, chunkCh <-chan []byte, errCh chan<- error)
 }
 
 type server struct {
-	grpc *grpc.Server
+	grpc     *grpc.Server
 	listener net.Listener
 }
 
@@ -50,7 +50,7 @@ func New(addr string, am accessManager, dk dataKeeper) (*server, error) {
 	})
 
 	return &server{
-		grpc: s, 
+		grpc:     s,
 		listener: listen,
 	}, nil
 }

@@ -136,7 +136,7 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 		if errors.Is(err, errs.ErrWrongPassword) {
 			return errors.New("wrong old password")
 		}
-		if errors.Is(err, errs.ErrEntryLocked) {
+		if errors.Is(err, errs.ErrLocked) {
 			return errors.New("entry locked by other client")
 		}
 		if err != nil {
@@ -154,7 +154,7 @@ func updatePassCmd(am accessManager, dm dataManager) *cobra.Command {
 	return &cobra.Command{
 		Use:   "updpass <old_password> <new_password>",
 		Short: "Update user password",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		RunE:  run,
 	}
 }
