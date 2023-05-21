@@ -31,6 +31,8 @@ type fileStorage interface {
 	Get(ctx context.Context, id, userID string, chunkCh chan<- []byte) error
 }
 
+// NewServerKeeper returns the object with all methods necessary for the 
+// side side data management.
 func NewServerKeeper(db dbConnector, fs fileStorage) *serverKeeper {
 	return &serverKeeper{
 		db: db,
@@ -38,22 +40,27 @@ func NewServerKeeper(db dbConnector, fs fileStorage) *serverKeeper {
 	}
 }
 
+// CheckAndLockEntry checks the entry and locks it in the DB in case of availability.
 func (s *serverKeeper) CheckAndLockEntry(ctx context.Context, id, userID string) error {
 	return s.db.CheckAndLockEntry(ctx, id, userID)
 }
 
+// CheckAndLockEntries checks all the users entries and locks them in the DB in case of availability.
 func (s *serverKeeper) CheckAndLockEntries(ctx context.Context, userID string) error {
 	return s.db.CheckAndLockEntries(ctx, userID)
 }
 
+// UnlockEntries revokes DB lock for the all user entries.
 func (s *serverKeeper) UnlockEntries(ctx context.Context, userID string) error {
 	return s.db.UnlockEntries(ctx, userID)
 }
 
+// UnlockEntry revokes DB lock for the entry.
 func (s *serverKeeper) UnlockEntry(ctx context.Context, id, userID string) error {
 	return s.db.UnlockEntry(ctx, id, userID)
 }
 
+// ForceDeleteEntries finally deletes all user entries from the DB and the file storage. 
 func (s *serverKeeper) ForceDeleteEntries(ctx context.Context, userID string) error {
 	entries, err := s.db.GetEntries(ctx, userID)
 	if err != nil {
@@ -81,6 +88,7 @@ func (s *serverKeeper) ForceDeleteEntries(ctx context.Context, userID string) er
 	return g.Wait()
 }
 
+// GetEntries returns all user entries metadata.
 func (s *serverKeeper) GetEntries(ctx context.Context, userID string) ([]*dto.ServerEntry, error) {
 	entries, err := s.db.GetEntries(ctx, userID)
 	if err != nil {
@@ -90,6 +98,8 @@ func (s *serverKeeper) GetEntries(ctx context.Context, userID string) ([]*dto.Se
 	return entries, nil
 }
 
+// AddEntry adds data to the file storage and to the DB. 
+// Adding occurs by the byte chunks. 
 func (s *serverKeeper) AddEntry(ctx context.Context, entry *dto.ServerEntry, chunkCh <-chan []byte, errCh chan<- error) {
 	err := s.fs.Add(ctx, entry, chunkCh)
 	if err != nil {
@@ -106,6 +116,8 @@ func (s *serverKeeper) AddEntry(ctx context.Context, entry *dto.ServerEntry, chu
 	close(errCh)
 }
 
+// GetEntry gets data from the file storage and from the DB. 
+// Getting occurs by the byte chunks. 
 func (s *serverKeeper) GetEntry(ctx context.Context, id, userID string, metadataCh chan<- *dto.ServerEntry, chunkCh chan<- []byte, errCh chan<- error) {
 
 	entry, err := s.db.GetEntry(ctx, id, userID)
@@ -125,6 +137,8 @@ func (s *serverKeeper) GetEntry(ctx context.Context, id, userID string, metadata
 	close(errCh)
 }
 
+// UpdateEntry add data to the file storage and to the DB. 
+// Updating occurs by the byte chunks. 
 func (s *serverKeeper) UpdateEntry(ctx context.Context, entry *dto.ServerEntry, chunkCh <-chan []byte, errCh chan<- error) {
 	err := s.fs.Add(ctx, entry, chunkCh)
 	if err != nil {

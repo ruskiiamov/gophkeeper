@@ -1,3 +1,4 @@
+// Package access is the user access logic for client ant server.
 package access
 
 import (
@@ -33,6 +34,8 @@ type clientManager struct {
 	provider provider
 }
 
+// NewClientManager returns object that provides all necessary methods
+// for access management on client side.
 func NewClientManager(s storage, p provider) *clientManager {
 	return &clientManager{
 		storage:  s,
@@ -40,6 +43,8 @@ func NewClientManager(s storage, p provider) *clientManager {
 	}
 }
 
+// Register creates new user on client side if it does not exist on server side. 
+// Provided creds are used for cipher key generation.
 func (c *clientManager) Register(ctx context.Context, login, password string) error {
 	creds, err := c.storage.GetUserCreds(ctx, login)
 	if err != nil && !errors.Is(err, errs.ErrNotFound) {
@@ -65,6 +70,9 @@ func (c *clientManager) Register(ctx context.Context, login, password string) er
 	return nil
 }
 
+// Login authenticates user on server side and saves the access token for 
+// following data synchronization. If the provided valid creds are differ from 
+// the local stored creds, the credsNotChanged is false.
 func (c *clientManager) Login(ctx context.Context, login, password string) (creds *dto.Creds, credsNotChanged bool, err error) {
 	serverPass := getServerPass(password)
 	key := c.GetKey(ctx, login, password)
@@ -100,6 +108,7 @@ func (c *clientManager) Login(ctx context.Context, login, password string) (cred
 	return creds, false, nil
 }
 
+// GetCreds returns creds for current authenticated user.
 func (c *clientManager) GetCreds(ctx context.Context) (*dto.Creds, error) {
 	creds, err := c.storage.GetAuthenticatedUserCreds(ctx)
 	if err != nil {
@@ -109,6 +118,7 @@ func (c *clientManager) GetCreds(ctx context.Context) (*dto.Creds, error) {
 	return creds, nil
 }
 
+// GetCredsByLogin returns creds for user with provided login. 
 func (c *clientManager) GetCredsByLogin(ctx context.Context, login string) (*dto.Creds, error) {
 	creds, err := c.storage.GetUserCreds(ctx, login)
 	if err != nil {
@@ -118,6 +128,7 @@ func (c *clientManager) GetCredsByLogin(ctx context.Context, login string) (*dto
 	return creds, nil
 }
 
+// GetKey returns the generated cipher key from the provided creds.
 func (c *clientManager) GetKey(ctx context.Context, login, password string) []byte {
 	h := md5.New()
 	h.Write([]byte(login))
@@ -130,6 +141,8 @@ func (c *clientManager) GetKey(ctx context.Context, login, password string) []by
 	return append(left, right...)
 }
 
+// UpdateCredsAndAuthenticate updates user cipher key and saves access token for the
+// following synchronizations.
 func (c *clientManager) UpdateCredsAndAuthenticate(ctx context.Context, login, password, token string) error {
 	key := c.GetKey(ctx, login, password)
 
@@ -144,6 +157,7 @@ func (c *clientManager) UpdateCredsAndAuthenticate(ctx context.Context, login, p
 	return nil
 }
 
+// UpdatePass updates user password on the server side.
 func (c *clientManager) UpdatePass(ctx context.Context, creds *dto.Creds, oldPassword, newPassword string) error {
 	oldServerPass := getServerPass(oldPassword)
 	newServerPass := getServerPass(newPassword)
@@ -155,6 +169,7 @@ func (c *clientManager) UpdatePass(ctx context.Context, creds *dto.Creds, oldPas
 	return nil
 }
 
+// Logout revokes authentication for current authenticated user.
 func (c *clientManager) Logout(ctx context.Context) error {
 	if err := c.storage.Logout(ctx); err != nil {
 		return fmt.Errorf("storage logout error: %w", err)

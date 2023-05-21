@@ -1,7 +1,9 @@
+// Package commands is the CLI commands logic for gophkeeper client.
 package commands
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ruskiiamov/gophkeeper/internal/dto"
 	"github.com/spf13/cobra"
@@ -34,8 +36,14 @@ type dataManager interface {
 	GetCard(ctx context.Context, creds *dto.Creds, id string) (*dto.Card, error)
 }
 
-func New(am accessManager, dm dataManager) *cobra.Command {
-	cmd := &cobra.Command{Use: "gophkeeper"}
+// New returns root Cobra command with all available subcommands. 
+func New(buildVersion, buildDate string, am accessManager, dm dataManager) *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "gophkeeper", 
+		Version: buildDate,
+	}
+
+	cmd.SetVersionTemplate(fmt.Sprintf("gophkeeper version: %s\nbuild date: %s\n", buildVersion, buildDate))
 
 	cmd.AddCommand(
 		registerCmd(am),

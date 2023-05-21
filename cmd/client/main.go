@@ -1,3 +1,4 @@
+// Gophkeeper client.
 package main
 
 import (
@@ -8,6 +9,11 @@ import (
 	"github.com/ruskiiamov/gophkeeper/internal/cryptor"
 	"github.com/ruskiiamov/gophkeeper/internal/data"
 	"github.com/ruskiiamov/gophkeeper/internal/localstorage"
+)
+
+var (
+	buildVersion string = `"N/A"`
+	buildDate    string = `"N/A"`
 )
 
 func main() {
@@ -30,6 +36,6 @@ func main() {
 	dataCryptor := cryptor.New()
 	dataKeeper := data.NewClientKeeper(config.GetFilesPath(), dataCryptor, storage, grpcClient)
 
-	cmd := commands.New(accessManager, dataKeeper)
+	cmd := commands.New(buildVersion, buildDate, accessManager, dataKeeper)
 	cmd.Execute()
 }

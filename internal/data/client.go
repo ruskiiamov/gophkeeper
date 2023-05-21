@@ -1,3 +1,5 @@
+// Package data is the data management logic for the 
+// Gophkeeper client and server.
 package data
 
 import (
@@ -31,6 +33,7 @@ type cipherBuilder interface {
 	Make(key []byte) (Cipher, error)
 }
 
+// Cipher is the interface for the slice of bytes cipher.
 type Cipher interface {
 	Crypt(chunk []byte) []byte
 }
@@ -57,6 +60,8 @@ type clientKeeper struct {
 	provider  provider
 }
 
+// NewClientKeeper returns the object with all methods necessary for the 
+// client side data management.
 func NewClientKeeper(filesPath string, c cipherBuilder, s storage, p provider) *clientKeeper {
 	return &clientKeeper{
 		filesPath: filesPath,
@@ -66,6 +71,7 @@ func NewClientKeeper(filesPath string, c cipherBuilder, s storage, p provider) *
 	}
 }
 
+// CheckSync check the existence of any not synced entries.
 func (c *clientKeeper) CheckSync(ctx context.Context, creds *dto.Creds) (bool, error) {
 	entries, err := c.getAllEntries(ctx, creds)
 	if err != nil {
@@ -81,6 +87,7 @@ func (c *clientKeeper) CheckSync(ctx context.Context, creds *dto.Creds) (bool, e
 	return true, nil
 }
 
+// UpdateEncryption updates encryption for all local entries with the new cipher key.
 func (c *clientKeeper) UpdateEncryption(ctx context.Context, creds *dto.Creds, newKey []byte) error {
 	entries, err := c.storage.GetEntries(ctx, creds.UserID)
 	if err != nil {
@@ -152,6 +159,7 @@ func (c *clientKeeper) UpdateEncryption(ctx context.Context, creds *dto.Creds, n
 	return nil
 }
 
+// AddLogPass adds new encrypted login-password data to the local storage.
 func (c *clientKeeper) AddLogPass(ctx context.Context, creds *dto.Creds, lp *dto.LogPass, description string) error {
 	id, err := uuid.NewV4()
 	if err != nil {
@@ -187,6 +195,7 @@ func (c *clientKeeper) AddLogPass(ctx context.Context, creds *dto.Creds, lp *dto
 	return nil
 }
 
+// AddText adds new encrypted text data to the local storage.
 func (c *clientKeeper) AddText(ctx context.Context, creds *dto.Creds, text, description string) error {
 	id, err := uuid.NewV4()
 	if err != nil {
@@ -219,6 +228,7 @@ func (c *clientKeeper) AddText(ctx context.Context, creds *dto.Creds, text, desc
 	return nil
 }
 
+// AddFile adds new encrypted file to the local storage.
 func (c *clientKeeper) AddFile(ctx context.Context, creds *dto.Creds, path, description string) error {
 	id, err := uuid.NewV4()
 	if err != nil {
@@ -256,6 +266,7 @@ func (c *clientKeeper) AddFile(ctx context.Context, creds *dto.Creds, path, desc
 	return nil
 }
 
+// AddCard adds new encrypted bank card data to the local storage.
 func (c *clientKeeper) AddCard(ctx context.Context, creds *dto.Creds, card *dto.Card, description string) error {
 	id, err := uuid.NewV4()
 	if err != nil {
@@ -291,6 +302,7 @@ func (c *clientKeeper) AddCard(ctx context.Context, creds *dto.Creds, card *dto.
 	return nil
 }
 
+// Sync makes data synchronization between client and server sides.
 func (c *clientKeeper) Sync(ctx context.Context, creds *dto.Creds) error {
 	entries, err := c.getAllEntries(ctx, creds)
 	if err != nil {
@@ -350,6 +362,7 @@ func (c *clientKeeper) Sync(ctx context.Context, creds *dto.Creds) error {
 	return nil
 }
 
+// GetList returns list of entries metadata from the local DB.
 func (c *clientKeeper) GetList(ctx context.Context, creds *dto.Creds) ([]*dto.ClientEntry, error) {
 	list, err := c.storage.GetEntries(ctx, creds.UserID)
 	if err != nil {
@@ -359,6 +372,7 @@ func (c *clientKeeper) GetList(ctx context.Context, creds *dto.Creds) ([]*dto.Cl
 	return list, nil
 }
 
+// GetEntry returns entry metadata from the local DB.
 func (c *clientKeeper) GetEntry(ctx context.Context, creds *dto.Creds, id string) (*dto.ClientEntry, error) {
 	entry, err := c.storage.GetEntry(ctx, creds.UserID, id)
 	if err != nil {
@@ -368,6 +382,7 @@ func (c *clientKeeper) GetEntry(ctx context.Context, creds *dto.Creds, id string
 	return entry, nil
 }
 
+// GetLogPass returns the decrypted login-password data from the local storage.
 func (c *clientKeeper) GetLogPass(ctx context.Context, creds *dto.Creds, id string) (*dto.LogPass, error) {
 	var buffer bytes.Buffer
 	err := c.getData(ctx, creds, id, &buffer)
@@ -384,6 +399,7 @@ func (c *clientKeeper) GetLogPass(ctx context.Context, creds *dto.Creds, id stri
 	return logPass, nil
 }
 
+// GetText returns the decrypted text data from the local storage.
 func (c *clientKeeper) GetText(ctx context.Context, creds *dto.Creds, id string) (string, error) {
 	var buffer bytes.Buffer
 	err := c.getData(ctx, creds, id, &buffer)
@@ -394,6 +410,7 @@ func (c *clientKeeper) GetText(ctx context.Context, creds *dto.Creds, id string)
 	return buffer.String(), nil
 }
 
+// GetFile returns the decrypted file from the local storage.
 func (c *clientKeeper) GetFile(ctx context.Context, creds *dto.Creds, id string) (string, error) {
 	entry, err := c.storage.GetEntry(ctx, creds.UserID, id)
 	if err != nil {
@@ -428,6 +445,7 @@ func (c *clientKeeper) GetFile(ctx context.Context, creds *dto.Creds, id string)
 	return path, nil
 }
 
+// GetCard returns the decrypted bank card data from the local storage.
 func (c *clientKeeper) GetCard(ctx context.Context, creds *dto.Creds, id string) (*dto.Card, error) {
 	var buffer bytes.Buffer
 	err := c.getData(ctx, creds, id, &buffer)

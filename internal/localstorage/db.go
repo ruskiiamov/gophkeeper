@@ -1,3 +1,4 @@
+// Package localstorage is the client local DB connector.
 package localstorage
 
 import (
@@ -18,6 +19,7 @@ type storage struct {
 	conn *sql.DB
 }
 
+// New returns the object of the locla DB connector.
 func New(dsn string) (*storage, error) {
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
@@ -61,10 +63,12 @@ func New(dsn string) (*storage, error) {
 	return &storage{conn: db}, nil
 }
 
+// Close makes DB connection closing.
 func (s *storage) Close() {
 	s.conn.Close()
 }
 
+// GetUserCreds returns user credentials.
 func (s *storage) GetUserCreds(ctx context.Context, login string) (*dto.Creds, error) {
 	creds := new(dto.Creds)
 	var key string
@@ -92,6 +96,7 @@ func (s *storage) GetUserCreds(ctx context.Context, login string) (*dto.Creds, e
 	return creds, nil
 }
 
+// AddUser adds user credentials to the storage.
 func (s *storage) AddUser(ctx context.Context, id, login string, key []byte) (*dto.Creds, error) {
 	strKey := base64.StdEncoding.EncodeToString(key)
 
@@ -108,6 +113,8 @@ func (s *storage) AddUser(ctx context.Context, id, login string, key []byte) (*d
 	}, nil
 }
 
+// AuthenticateUser saves access token and sets authenticated flag for provided user.
+// If another user is already authenticated, he will be unauthenticated.
 func (s *storage) AuthenticateUser(ctx context.Context, login, token string) error {
 	_, err := s.conn.ExecContext(ctx, `UPDATE users SET authenticated = 0;`)
 	if err != nil {
@@ -124,6 +131,7 @@ func (s *storage) AuthenticateUser(ctx context.Context, login, token string) err
 	return nil
 }
 
+// GetAuthenticatedUserCreds returns authenticated user credentials.
 func (s *storage) GetAuthenticatedUserCreds(ctx context.Context) (*dto.Creds, error) {
 	creds := new(dto.Creds)
 	var key string
@@ -151,6 +159,7 @@ func (s *storage) GetAuthenticatedUserCreds(ctx context.Context) (*dto.Creds, er
 	return creds, nil
 }
 
+// UpdateUserKey updates user cipher key.
 func (s *storage) UpdateUserKey(ctx context.Context, login string, key []byte) error {
 	strKey := base64.StdEncoding.EncodeToString(key)
 
@@ -164,6 +173,7 @@ func (s *storage) UpdateUserKey(ctx context.Context, login string, key []byte) e
 	return nil
 }
 
+// Logout revokes user authentication.
 func (s *storage) Logout(ctx context.Context) error {
 	_, err := s.conn.ExecContext(ctx, `UPDATE users SET authenticated = 0;`)
 	if err != nil {
@@ -173,6 +183,7 @@ func (s *storage) Logout(ctx context.Context) error {
 	return nil
 }
 
+// GetEntries returns all user entries metadata.
 func (s *storage) GetEntries(ctx context.Context, userID string) ([]*dto.ClientEntry, error) {
 	entries := make([]*dto.ClientEntry, 0)
 
@@ -234,6 +245,7 @@ func (s *storage) GetEntries(ctx context.Context, userID string) ([]*dto.ClientE
 	return entries, nil
 }
 
+// AddEntry adds new entry metadata.
 func (s *storage) AddEntry(ctx context.Context, entry *dto.ClientEntry) error {
 	var entryType sql.NullInt32
 	if entry.Type.Valid() {
@@ -274,6 +286,7 @@ func (s *storage) AddEntry(ctx context.Context, entry *dto.ClientEntry) error {
 	return nil
 }
 
+// GetEntry returns entry metadata.
 func (s *storage) GetEntry(ctx context.Context, userID, id string) (*dto.ClientEntry, error) {
 	var (
 		entryType                       sql.NullInt32
@@ -319,6 +332,7 @@ func (s *storage) GetEntry(ctx context.Context, userID, id string) (*dto.ClientE
 	return entry, nil
 }
 
+// AddOrUpdateEntry adds new entry ao updates existing one.
 func (s *storage) AddOrUpdateEntry(ctx context.Context, entry *dto.ClientEntry) error {
 	_, err := s.GetEntry(ctx, entry.UserID, entry.ID)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -361,6 +375,7 @@ func (s *storage) AddOrUpdateEntry(ctx context.Context, entry *dto.ClientEntry) 
 	return nil
 }
 
+// UpdateChecksums updates entry checksum.
 func (s *storage) UpdateChecksums(ctx context.Context, entries []*dto.ClientEntry) error {
 	tx, err := s.conn.Begin()
 	if err != nil {

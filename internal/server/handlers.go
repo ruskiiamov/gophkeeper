@@ -29,6 +29,7 @@ type gkServer struct {
 	dk dataKeeper
 }
 
+// Register handles simple RPC for register new user.
 func (g *gkServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
@@ -44,6 +45,7 @@ func (g *gkServer) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.Re
 	return &pb.RegisterResponse{Id: id}, nil
 }
 
+// Login handles simple RPC for user authentication.
 func (g *gkServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
@@ -59,6 +61,7 @@ func (g *gkServer) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginRes
 	return &pb.LoginResponse{Id: id, Token: token}, nil
 }
 
+// UpdatePass handles simple RPC for user password update.
 func (g *gkServer) UpdatePass(ctx context.Context, in *pb.UpdatePassRequest) (*pb.UpdatePassResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -102,6 +105,7 @@ func (g *gkServer) UpdatePass(ctx context.Context, in *pb.UpdatePassRequest) (*p
 	return &pb.UpdatePassResponse{}, nil
 }
 
+// GetEntries handles simple RPC for getting user server side entries.
 func (g *gkServer) GetEntries(ctx context.Context, in *pb.GetEntriesRequest) (*pb.GetEntriesResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
@@ -129,6 +133,7 @@ func (g *gkServer) GetEntries(ctx context.Context, in *pb.GetEntriesRequest) (*p
 	return &pb.GetEntriesResponse{Entry: grpcEntries}, nil
 }
 
+// AddEntry handle client-side streaming RPC for adding data to the server.
 func (g *gkServer) AddEntry(stream pb.GophKeeper_AddEntryServer) error {
 	ctx, cancel := context.WithTimeout(stream.Context(), 90*time.Second)
 	defer cancel()
@@ -199,6 +204,7 @@ func (g *gkServer) AddEntry(stream pb.GophKeeper_AddEntryServer) error {
 	return stream.SendAndClose(&pb.AddEntryResponse{})
 }
 
+// GetEntry handles server-side streaming RPC for getting data from the server.  
 func (g *gkServer) GetEntry(in *pb.GetEntryRequest, stream pb.GophKeeper_GetEntryServer) error {
 	ctx, cancel := context.WithTimeout(stream.Context(), 90*time.Second)
 	defer cancel()
@@ -269,6 +275,8 @@ func (g *gkServer) GetEntry(in *pb.GetEntryRequest, stream pb.GophKeeper_GetEntr
 	return nil
 }
 
+// UpdateEntry handles bidirectional streaming RPC for updating data on the
+// server side after confirmation.
 func (g *gkServer) UpdateEntry(stream pb.GophKeeper_UpdateEntryServer) error {
 	ctx, cancel := context.WithTimeout(stream.Context(), 90*time.Second)
 	defer cancel()
@@ -346,6 +354,7 @@ func (g *gkServer) UpdateEntry(stream pb.GophKeeper_UpdateEntryServer) error {
 	return nil
 }
 
+// DeleteEntry handles simple RPC for deleting data on the server side.
 func (g *gkServer) DeleteEntry(ctx context.Context, in *pb.DeleteEntryRequest) (*pb.DeleteEntryResponse, error) {
 	//TODO
 	return &pb.DeleteEntryResponse{}, nil

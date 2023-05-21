@@ -1,3 +1,4 @@
+// Package cryptor is the AES-CTR cipher.
 package cryptor
 
 import (
@@ -17,10 +18,12 @@ type cryptor struct {
 	slice  []byte
 }
 
+// New returns AES-CTR cipher builder.
 func New() *builder {
 	return &builder{}
 }
 
+// Make returns AES-CTR cipher.
 func (b *builder) Make(key []byte) (data.Cipher, error) {
 	if len(key) != keySize {
 		return nil, fmt.Errorf("wrong key size")
@@ -41,6 +44,7 @@ func (b *builder) Make(key []byte) (data.Cipher, error) {
 	return &cryptor{stream: stream}, nil
 }
 
+// Crypt makes AES-CTR encryption/decryption of the provided slice of bytes.
 func (c *cryptor) Crypt(chunk []byte) []byte {
 	if len(c.slice) != len(chunk) {
 		c.slice = make([]byte, len(chunk))

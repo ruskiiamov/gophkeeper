@@ -1,3 +1,4 @@
+// Package file is the local file storage implementation.
 package file
 
 import (
@@ -19,10 +20,13 @@ type storage struct {
 	filesPath string
 }
 
+// NewStorage returns the object that has all necessary methods for 
+// Gophkeeper files management. 
 func NewStorage(filesPath string) *storage {
 	return &storage{filesPath: filesPath}
 }
 
+// Delete removes file from the storage.
 func (s *storage) Delete(ctx context.Context, id, userID string) error {
 	path := filepath.Join(s.filesPath, userID, id)
 
@@ -37,6 +41,7 @@ func (s *storage) Delete(ctx context.Context, id, userID string) error {
 	return nil
 }
 
+// Add makes adding of the file to the storage by chunks.
 func (s *storage) Add(ctx context.Context, entry *dto.ServerEntry, chunkCh <-chan []byte) error {
 	dirPath := filepath.Join(s.filesPath, entry.UserID)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
@@ -83,6 +88,7 @@ func (s *storage) Add(ctx context.Context, entry *dto.ServerEntry, chunkCh <-cha
 	return nil
 }
 
+// Add makes getting of the file from the storage by chunks.
 func (s *storage) Get(ctx context.Context, id, userID string, chunkCh chan<- []byte) error {
 	path := filepath.Join(s.filesPath, userID, id)
 	file, err := os.OpenFile(path, os.O_RDONLY, 0777)

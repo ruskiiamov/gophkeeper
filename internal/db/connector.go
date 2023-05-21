@@ -1,3 +1,4 @@
+// Package db is the DB connector.
 package db
 
 import (
@@ -24,6 +25,8 @@ type connector struct {
 	pool *pgxpool.Pool
 }
 
+// NewConnector returns the connector object with all necessary methods
+// for data storing.
 func NewConnector(ctx context.Context, dsn string) (*connector, error) {
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -43,10 +46,12 @@ func NewConnector(ctx context.Context, dsn string) (*connector, error) {
 	return &connector{pool: pool}, nil
 }
 
+// Close makes all DB connections closing.
 func (c *connector) Close() {
 	c.pool.Close()
 }
 
+// AddUser adds user data to the DB and returns generated UUID.
 func (c *connector) AddUser(ctx context.Context, login, passHash string) (id string, err error) {
 	err = c.pool.QueryRow(
 		ctx,
@@ -65,6 +70,7 @@ func (c *connector) AddUser(ctx context.Context, login, passHash string) (id str
 	return id, nil
 }
 
+// GetUser returns user data by the login.
 func (c *connector) GetUser(ctx context.Context, login string) (*dto.User, error) {
 	user := &dto.User{Login: login}
 
@@ -87,6 +93,7 @@ func (c *connector) GetUser(ctx context.Context, login string) (*dto.User, error
 	return user, nil
 }
 
+// GetUserByID returns user data by the user id.
 func (c *connector) GetUserByID(ctx context.Context, userID string) (*dto.User, error) {
 	user := &dto.User{ID: userID}
 
@@ -109,6 +116,7 @@ func (c *connector) GetUserByID(ctx context.Context, userID string) (*dto.User, 
 	return user, nil
 }
 
+// CheckAndLockUser makes transaction with the check and lock user.
 func (c *connector) CheckAndLockUser(ctx context.Context, userID string, passHashCh chan<- string, confirmationCh <-chan bool, errCh chan<- error) {
 	tx, err := c.pool.Begin(ctx)
 	if err != nil {
@@ -169,6 +177,7 @@ func (c *connector) CheckAndLockUser(ctx context.Context, userID string, passHas
 	errCh <- nil
 }
 
+// UnlockUser revokes user lock.
 func (c *connector) UnlockUser(ctx context.Context, userID string) error {
 	_, err := c.pool.Exec(
 		ctx,
@@ -184,6 +193,7 @@ func (c *connector) UnlockUser(ctx context.Context, userID string) error {
 	return nil
 }
 
+// UpdatePassHash updates user password hash.
 func (c *connector) UpdatePassHash(ctx context.Context, userID, passHash string) error {
 	_, err := c.pool.Exec(
 		ctx,
@@ -199,6 +209,7 @@ func (c *connector) UpdatePassHash(ctx context.Context, userID, passHash string)
 	return nil
 }
 
+// CheckAndLockEntry makes transaction with check and lock for the entry.
 func (c *connector) CheckAndLockEntry(ctx context.Context, id, userID string) error {
 	tx, err := c.pool.Begin(ctx)
 	if err != nil {
@@ -240,6 +251,7 @@ func (c *connector) CheckAndLockEntry(ctx context.Context, id, userID string) er
 	return nil
 }
 
+// CheckAndLockEntries makes transaction with check and lock for the all user entries.
 func (c *connector) CheckAndLockEntries(ctx context.Context, userID string) error {
 	tx, err := c.pool.Begin(ctx)
 	if err != nil {
@@ -278,6 +290,7 @@ func (c *connector) CheckAndLockEntries(ctx context.Context, userID string) erro
 	return nil
 }
 
+// UnlockEntry revokes entry lock.
 func (c *connector) UnlockEntry(ctx context.Context, id, userID string) error {
 	_, err := c.pool.Exec(
 		ctx,
@@ -293,6 +306,7 @@ func (c *connector) UnlockEntry(ctx context.Context, id, userID string) error {
 	return nil
 }
 
+// UnlockEntries revokes lock for all user entries.
 func (c *connector) UnlockEntries(ctx context.Context, userID string) error {
 	_, err := c.pool.Exec(
 		ctx,
@@ -307,6 +321,7 @@ func (c *connector) UnlockEntries(ctx context.Context, userID string) error {
 	return nil
 }
 
+// GetEntries returns all user entries metadata.
 func (c *connector) GetEntries(ctx context.Context, userID string) ([]*dto.ServerEntry, error) {
 	rows, err := c.pool.Query(
 		ctx,
@@ -330,6 +345,7 @@ func (c *connector) GetEntries(ctx context.Context, userID string) ([]*dto.Serve
 	return entries, nil
 }
 
+// ForceDeleteEntry deletes rows from the entry storage.
 func (c *connector) ForceDeleteEntry(ctx context.Context, id, userID string) error {
 	_, err := c.pool.Exec(
 		ctx,
@@ -344,6 +360,7 @@ func (c *connector) ForceDeleteEntry(ctx context.Context, id, userID string) err
 	return nil
 }
 
+// AddEntry adds new row to the entry storage.
 func (c *connector) AddEntry(ctx context.Context, entry *dto.ServerEntry) error {
 	_, err := c.pool.Exec(
 		ctx,
@@ -359,6 +376,7 @@ func (c *connector) AddEntry(ctx context.Context, entry *dto.ServerEntry) error 
 	return nil
 }
 
+// GetEntry returns entry metadata.
 func (c *connector) GetEntry(ctx context.Context, id, userID string) (*dto.ServerEntry, error) {
 	entry := &dto.ServerEntry{ID: id, UserID: userID}
 
@@ -375,6 +393,7 @@ func (c *connector) GetEntry(ctx context.Context, id, userID string) (*dto.Serve
 	return entry, nil
 }
 
+// UpdateEntry updates entry metadata.
 func (c *connector) UpdateEntry(ctx context.Context, entry *dto.ServerEntry) error {
 	_, err := c.pool.Exec(
 		ctx,

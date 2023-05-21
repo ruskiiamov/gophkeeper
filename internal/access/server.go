@@ -32,6 +32,8 @@ type dbConnector interface {
 	UpdatePassHash(ctx context.Context, userID, passHash string) error
 }
 
+// NewServerManager returns object that provides all necessary methods
+// for access management on server side.
 func NewServerManager(secret string, db dbConnector) *serverManager {
 	return &serverManager{
 		db:     db,
@@ -39,6 +41,7 @@ func NewServerManager(secret string, db dbConnector) *serverManager {
 	}
 }
 
+// Register creates new user on server side if it does not exist in the DB.
 func (s *serverManager) Register(ctx context.Context, login, password string) (id string, err error) {
 	passHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -53,6 +56,8 @@ func (s *serverManager) Register(ctx context.Context, login, password string) (i
 	return id, nil
 }
 
+// Login authenticates user on server side and generates new access token for 
+// following data synchronization. 
 func (s *serverManager) Login(ctx context.Context, login, password string) (id, token string, err error) {
 	user, err := s.db.GetUser(ctx, login)
 	if errors.Is(err, errs.ErrNotFound) {
@@ -79,6 +84,8 @@ func (s *serverManager) Login(ctx context.Context, login, password string) (id, 
 	return user.ID, token, nil
 }
 
+// Auth checks provided access token and returns its owner id. If the access token 
+// was created before the last user password update, this token is considered as not valid.
 func (s *serverManager) Auth(ctx context.Context, token string) (userID string, err error) {
 	jwtToken, _ := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -124,6 +131,7 @@ func (s *serverManager) Auth(ctx context.Context, token string) (userID string, 
 	return userID, nil
 }
 
+// CheckAndLockUser checks the DB lock for user and locks it in case of user availability.
 func (s *serverManager) CheckAndLockUser(ctx context.Context, userID, password string) error {
 	passHashCh := make(chan string, 1)
 	confirmationCh := make(chan bool, 1)
@@ -159,6 +167,7 @@ func (s *serverManager) CheckAndLockUser(ctx context.Context, userID, password s
 	return err
 }
 
+// UnlockUser opens the lock for provided user.
 func (s *serverManager) UnlockUser(ctx context.Context, userID string) error {
 	err := s.db.UnlockUser(ctx, userID)
 	if err != nil {
@@ -168,6 +177,7 @@ func (s *serverManager) UnlockUser(ctx context.Context, userID string) error {
 	return nil
 }
 
+// UpdatePass updates the stored password hash for the user.
 func (s *serverManager) UpdatePass(ctx context.Context, userID, password string) error {
 	passHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

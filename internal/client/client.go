@@ -1,3 +1,5 @@
+// Package client is the gRPC client implementation 
+// for the gophkeeper gRPC server.
 package client
 
 import (
@@ -30,6 +32,8 @@ type client struct {
 	grpc pb.GophKeeperClient
 }
 
+// New returns the object that contains all necessary methods for gRPC
+// interaction with the server.
 func New(serverAddr string) (*client, error) {
 	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials())) //TODO
 	if err != nil {
@@ -48,6 +52,7 @@ func (c *client) Close() {
 	c.conn.Close()
 }
 
+// Register makes simple RPC for register new user.
 func (c *client) Register(ctx context.Context, login, password string) (id string, err error) {
 	resp, err := c.grpc.Register(ctx, &pb.RegisterRequest{
 		Login:    login,
@@ -66,6 +71,7 @@ func (c *client) Register(ctx context.Context, login, password string) (id strin
 	return resp.Id, nil
 }
 
+// Login makes simple RPC for authenticate user and get the valid access token.
 func (c *client) Login(ctx context.Context, login, password string) (id, token string, err error) {
 	resp, err := c.grpc.Login(ctx, &pb.LoginRequest{
 		Login:    login,
@@ -84,6 +90,7 @@ func (c *client) Login(ctx context.Context, login, password string) (id, token s
 	return resp.Id, resp.Token, nil
 }
 
+// UpdatePass makes simple RPC for user password update on the server side.
 func (c *client) UpdatePass(ctx context.Context, token, oldPassword, newPassword string) error {
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(mdAuthorization, token))
 
@@ -109,6 +116,7 @@ func (c *client) UpdatePass(ctx context.Context, token, oldPassword, newPassword
 	return nil
 }
 
+// GetEntries makes simple RPC for receiving all user entries metadata fro the server side.
 func (c *client) GetEntries(ctx context.Context, token string) ([]*dto.ServerEntry, error) {
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(mdAuthorization, token))
 
@@ -136,6 +144,7 @@ func (c *client) GetEntries(ctx context.Context, token string) ([]*dto.ServerEnt
 	return serverEntries, nil
 }
 
+// AddEntry makes client-side streaming RPC for adding data to the server.
 func (c *client) AddEntry(ctx context.Context, token string, entry *dto.ServerEntry, src io.Reader) error {
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		mdAuthorization, token,
@@ -177,6 +186,7 @@ func (c *client) AddEntry(ctx context.Context, token string, entry *dto.ServerEn
 	return nil
 }
 
+// GetEntry makes server-side streaming RPC for adding data to the client.
 func (c *client) GetEntry(ctx context.Context, token, id string, dst io.Writer) (*dto.ServerEntry, error) {
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(mdAuthorization, token))
 
@@ -226,6 +236,7 @@ func (c *client) GetEntry(ctx context.Context, token, id string, dst io.Writer) 
 	return entry, nil
 }
 
+// UpdateEntry makes bidirectional streaming RPC for adding data to the server after server confirmation.
 func (c *client) UpdateEntry(ctx context.Context, token string, entry *dto.ServerEntry, src io.Reader) error {
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(
 		mdAuthorization, token,

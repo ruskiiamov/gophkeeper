@@ -1,3 +1,4 @@
+// Package server is the gRPC server implementation for Gophkeeper.
 package server
 
 import (
@@ -36,6 +37,7 @@ type server struct {
 	listener net.Listener
 }
 
+// New returns the object that handle all gRPCs.
 func New(addr string, am accessManager, dk dataKeeper) (*server, error) {
 	s := grpc.NewServer()
 
@@ -55,10 +57,12 @@ func New(addr string, am accessManager, dk dataKeeper) (*server, error) {
 	}, nil
 }
 
+// Serve starts the gRPC server.
 func (s *server) Serve() error {
 	return s.grpc.Serve(s.listener)
 }
 
+// Stop stops the gRPC server.
 func (s *server) Stop() {
 	s.grpc.Stop()
 }

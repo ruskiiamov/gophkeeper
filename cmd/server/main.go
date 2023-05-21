@@ -1,3 +1,4 @@
+// Gophkeeper server.
 package main
 
 import (
