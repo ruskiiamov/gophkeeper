@@ -43,7 +43,7 @@ func NewClientManager(s storage, p provider) *clientManager {
 	}
 }
 
-// Register creates new user on client side if it does not exist on server side. 
+// Register creates new user on client side if it does not exist on server side.
 // Provided creds are used for cipher key generation.
 func (c *clientManager) Register(ctx context.Context, login, password string) error {
 	creds, err := c.storage.GetUserCreds(ctx, login)
@@ -70,8 +70,8 @@ func (c *clientManager) Register(ctx context.Context, login, password string) er
 	return nil
 }
 
-// Login authenticates user on server side and saves the access token for 
-// following data synchronization. If the provided valid creds are differ from 
+// Login authenticates user on server side and saves the access token for
+// following data synchronization. If the provided valid creds are differ from
 // the local stored creds, the credsNotChanged is false.
 func (c *clientManager) Login(ctx context.Context, login, password string) (creds *dto.Creds, credsNotChanged bool, err error) {
 	serverPass := getServerPass(password)
@@ -118,7 +118,7 @@ func (c *clientManager) GetCreds(ctx context.Context) (*dto.Creds, error) {
 	return creds, nil
 }
 
-// GetCredsByLogin returns creds for user with provided login. 
+// GetCredsByLogin returns creds for user with provided login.
 func (c *clientManager) GetCredsByLogin(ctx context.Context, login string) (*dto.Creds, error) {
 	creds, err := c.storage.GetUserCreds(ctx, login)
 	if err != nil {

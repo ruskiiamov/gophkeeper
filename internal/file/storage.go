@@ -20,8 +20,8 @@ type storage struct {
 	filesPath string
 }
 
-// NewStorage returns the object that has all necessary methods for 
-// Gophkeeper files management. 
+// NewStorage returns the object that has all necessary methods for
+// Gophkeeper files management.
 func NewStorage(filesPath string) *storage {
 	return &storage{filesPath: filesPath}
 }

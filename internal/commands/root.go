@@ -36,10 +36,10 @@ type dataManager interface {
 	GetCard(ctx context.Context, creds *dto.Creds, id string) (*dto.Card, error)
 }
 
-// New returns root Cobra command with all available subcommands. 
+// New returns root Cobra command with all available subcommands.
 func New(buildVersion, buildDate string, am accessManager, dm dataManager) *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "gophkeeper", 
+		Use:     "gophkeeper",
 		Version: buildDate,
 	}
 

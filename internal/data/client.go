@@ -1,4 +1,4 @@
-// Package data is the data management logic for the 
+// Package data is the data management logic for the
 // Gophkeeper client and server.
 package data
 
@@ -60,7 +60,7 @@ type clientKeeper struct {
 	provider  provider
 }
 
-// NewClientKeeper returns the object with all methods necessary for the 
+// NewClientKeeper returns the object with all methods necessary for the
 // client side data management.
 func NewClientKeeper(filesPath string, c cipherBuilder, s storage, p provider) *clientKeeper {
 	return &clientKeeper{

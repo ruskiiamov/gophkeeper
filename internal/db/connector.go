@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	source = "file://internal/db/migrations"
+	source = "file://migrations"
 	ttl    = 2 * time.Minute
 )
 

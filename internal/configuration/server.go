@@ -9,7 +9,7 @@ func ReadServerConfig() *serverConfig {
 	return &serverConfig{}
 }
 
-// GetDSN returns DSN for the server DB. 
+// GetDSN returns DSN for the server DB.
 func (s *serverConfig) GetDSN() string {
 	return "postgres://root:root@localhost:54320/gophkeeper?sslmode=disable" //TODO
 }

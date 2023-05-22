@@ -1,4 +1,4 @@
-// Package client is the gRPC client implementation 
+// Package client is the gRPC client implementation
 // for the gophkeeper gRPC server.
 package client
 

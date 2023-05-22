@@ -204,7 +204,7 @@ func (g *gkServer) AddEntry(stream pb.GophKeeper_AddEntryServer) error {
 	return stream.SendAndClose(&pb.AddEntryResponse{})
 }
 
-// GetEntry handles server-side streaming RPC for getting data from the server.  
+// GetEntry handles server-side streaming RPC for getting data from the server.
 func (g *gkServer) GetEntry(in *pb.GetEntryRequest, stream pb.GophKeeper_GetEntryServer) error {
 	ctx, cancel := context.WithTimeout(stream.Context(), 90*time.Second)
 	defer cancel()

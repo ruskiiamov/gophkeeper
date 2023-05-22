@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ttl          = 30 * time.Minute
+	ttl          = 6 * time.Hour
 	lockedSuffix = "-locked"
 )
 
@@ -56,8 +56,8 @@ func (s *serverManager) Register(ctx context.Context, login, password string) (i
 	return id, nil
 }
 
-// Login authenticates user on server side and generates new access token for 
-// following data synchronization. 
+// Login authenticates user on server side and generates new access token for
+// following data synchronization.
 func (s *serverManager) Login(ctx context.Context, login, password string) (id, token string, err error) {
 	user, err := s.db.GetUser(ctx, login)
 	if errors.Is(err, errs.ErrNotFound) {
@@ -84,7 +84,7 @@ func (s *serverManager) Login(ctx context.Context, login, password string) (id, 
 	return user.ID, token, nil
 }
 
-// Auth checks provided access token and returns its owner id. If the access token 
+// Auth checks provided access token and returns its owner id. If the access token
 // was created before the last user password update, this token is considered as not valid.
 func (s *serverManager) Auth(ctx context.Context, token string) (userID string, err error) {
 	jwtToken, _ := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
@@ -121,7 +121,7 @@ func (s *serverManager) Auth(ctx context.Context, token string) (userID string, 
 
 	user, err := s.db.GetUserByID(ctx, userID)
 	if err != nil {
-		return "", fmt.Errorf("fb get user by id error: %w", err)
+		return "", fmt.Errorf("db get user by id error: %w", err)
 	}
 
 	if time.Unix(intCreatedAt, 0).Before(user.LockedUntil) {
