@@ -83,7 +83,7 @@ func (c *clientManager) Login(ctx context.Context, login, password string) (cred
 	}
 
 	creds, err = c.storage.GetUserCreds(ctx, login)
-	if err != nil {
+	if err != nil && !errors.Is(err, errs.ErrNotFound) {
 		return nil, false, fmt.Errorf("storage get user error: %w", err)
 	}
 
