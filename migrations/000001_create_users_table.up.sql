@@ -1,0 +1,13 @@
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS users(
+   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+   login VARCHAR (255) UNIQUE NOT NULL,
+   pass_hash VARCHAR (255) NOT NULL,
+   locked BOOL NOT NULL DEFAULT FALSE,
+   locked_until TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS login_idx ON users (login);
+
+COMMIT;

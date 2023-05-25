@@ -1,55 +1,76 @@
 package commands
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ruskiiamov/gophkeeper/internal/enum"
+	"github.com/ruskiiamov/gophkeeper/internal/errs"
 	"github.com/spf13/cobra"
 )
 
 func syncCmd(am accessManager, dm dataManager) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) error {
-		creds, err := am.GetCreds()
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		defer cancel()
+
+		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
 
-		err = dm.Sync(creds)
+		err = dm.Sync(ctx, creds)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
 
 		return nil
 	}
-	
+
 	return &cobra.Command{
 		Use:   "sync",
 		Short: "Data synchronization",
-		RunE: run,
+		RunE:  run,
 	}
 }
 
 func listCmd(am accessManager, dm dataManager) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) error {
-		creds, err := am.GetCreds()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
 
-		list, err := dm.GetList(creds)
+		list, err := dm.GetList(ctx, creds)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println(list)//TODO show results in table
+		for _, item := range list {
+			fmt.Println(item.ID, item.Type, item.Description) //TODO show results in table
+		}
 
 		return nil
 	}
-	
+
 	return &cobra.Command{
 		Use:   "list",
 		Short: "Show stored data list",
-		RunE: run,
+		RunE:  run,
 	}
 }
 
@@ -57,38 +78,44 @@ func getCmd(am accessManager, dm dataManager) *cobra.Command {
 	run := func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 
-		creds, err := am.GetCreds()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		creds, err := am.GetCreds(ctx)
+		if errors.Is(err, errs.ErrUnauthenticated) {
+			return errors.New("auth is needed")
+		}
 		if err != nil {
 			return err
 		}
 
-		entry, err := dm.GetEntry(creds, id)
+		entry, err := dm.GetEntry(ctx, creds, id)
 		if err != nil {
 			return err
 		}
 
 		switch entry.Type {
 		case enum.LogPass:
-			logPass, err := dm.GetLogPass(creds, id)
+			logPass, err := dm.GetLogPass(ctx, creds, id)
 			if err != nil {
 				return err
 			}
 			fmt.Printf("Login: %s\n", logPass.Login)
 			fmt.Printf("Password: %s\n", logPass.Password)
 		case enum.Text:
-			text, err := dm.GetText(creds, id)
+			text, err := dm.GetText(ctx, creds, id)
 			if err != nil {
 				return err
 			}
 			fmt.Println(text)
 		case enum.File:
-			path, err := dm.GetFile(creds, id)
+			path, err := dm.GetFile(ctx, creds, id)
 			if err != nil {
 				return err
 			}
 			fmt.Printf("File path: %s\n", path)
 		case enum.Card:
-			card, err := dm.GetCard(creds, id)
+			card, err := dm.GetCard(ctx, creds, id)
 			if err != nil {
 				return err
 			}
@@ -103,11 +130,11 @@ func getCmd(am accessManager, dm dataManager) *cobra.Command {
 
 		return nil
 	}
-	
+
 	return &cobra.Command{
 		Use:   "get <id>",
 		Short: "Get data entry",
-		Args: cobra.ExactArgs(1),
-		RunE: run,
+		Args:  cobra.ExactArgs(1),
+		RunE:  run,
 	}
 }
